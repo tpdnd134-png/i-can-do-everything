@@ -1274,7 +1274,7 @@ function renderIBig3(){
   document.getElementById('ilist-big3').innerHTML=`<div style="max-height:220px;overflow-y:auto">${html}</div>`;
 }
 function iRowSub(text, type, isDone){
-  const safe=text.replace(/\/g,'\\').replace(/'/g,"\'");
+  const safe=text.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
   return `<div onclick="importTask('${safe}','${type}')" style="display:flex;align-items:center;gap:10px;padding:7px 14px 7px 30px;border:1px solid var(--border);border-top:none;margin-bottom:0;cursor:pointer;background:var(--bg);opacity:${isDone?'.45':'1'}" onmouseover="this.style.borderColor='var(--accent)';this.style.background='var(--surface2)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--bg)'">
     <span style="color:var(--muted);font-size:10px;flex-shrink:0">${isDone?'✓':'↳'}</span>
     <span style="flex:1;font-size:12px;${isDone?'text-decoration:line-through;color:var(--muted)':''}">${escHtml(text)}</span>
