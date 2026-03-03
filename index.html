@@ -364,8 +364,8 @@
     .date-display { font-size: 9px; padding: 10px 8px; }
   }
 </style>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -695,14 +695,54 @@ function save() {
 }
 
 // Load from Firebase on startup, fallback to localStorage
+function loadFromLocalStorage() {
+  state.dumpItems = JSON.parse(localStorage.getItem('dumpItems')||'[]');
+  state.big3      = JSON.parse(localStorage.getItem('big3')||'[]');
+  state.backlog   = JSON.parse(localStorage.getItem('backlog')||'[]');
+  state.blocks    = JSON.parse(localStorage.getItem('blocks')||'[]');
+  state.reviews   = JSON.parse(localStorage.getItem('reviews')||'[]');
+  state.typeGuide = JSON.parse(localStorage.getItem('typeGuide')||'null')||DEFAULT_TYPES;
+  state.streak    = parseInt(localStorage.getItem('streak')||'0');
+}
+function hideLoadingOverlay(msg) {
+  const overlay = document.getElementById('loadingOverlay');
+  const bar = document.getElementById('loadingBar');
+  if(bar) bar.style.width = '100%';
+  if(msg) {
+    const el = overlay && overlay.querySelector('div:nth-child(2)');
+    if(el) el.textContent = msg;
+  }
+  setTimeout(() => { if(overlay) overlay.style.display = 'none'; }, msg ? 1200 : 400);
+}
 function loadData() {
   showSync('saving');
-  // Animate loading bar
+  let done = false;
   let pct = 0;
   const bar = document.getElementById('loadingBar');
-  const barAnim = setInterval(() => { pct = Math.min(pct + 8, 85); if(bar) bar.style.width = pct + '%'; if(pct>=85) clearInterval(barAnim); }, 80);
+  const barAnim = setInterval(() => {
+    pct = Math.min(pct + 5, 85);
+    if(bar) bar.style.width = pct + '%';
+    if(pct >= 85) clearInterval(barAnim);
+  }, 100);
+
+  // 8초 안에 응답 없으면 localStorage로 폴백
+  const timeoutId = setTimeout(() => {
+    if(done) return;
+    done = true;
+    clearInterval(barAnim);
+    showSync('offline');
+    loadFromLocalStorage();
+    hideLoadingOverlay('오프라인 모드로 시작합니다');
+    initApp();
+    retryFirebase();
+  }, 8000);
+
   db.ref(DB_KEY).once('value')
     .then(snapshot => {
+      if(done) return;
+      done = true;
+      clearTimeout(timeoutId);
+      clearInterval(barAnim);
       const data = snapshot.val();
       if(data) {
         state.dumpItems = data.dumpItems || [];
@@ -712,46 +752,51 @@ function loadData() {
         state.reviews   = data.reviews   || [];
         state.typeGuide = data.typeGuide || DEFAULT_TYPES;
         state.streak    = data.streak    || 0;
-        // Also update localStorage
         ['dumpItems','big3','backlog','blocks','reviews','typeGuide'].forEach(k=>localStorage.setItem(k,JSON.stringify(state[k])));
         localStorage.setItem('streak', state.streak);
       } else {
-        // No Firebase data yet — load from localStorage
-        state.dumpItems = JSON.parse(localStorage.getItem('dumpItems')||'[]');
-        state.big3      = JSON.parse(localStorage.getItem('big3')||'[]');
-        state.backlog   = JSON.parse(localStorage.getItem('backlog')||'[]');
-        state.blocks    = JSON.parse(localStorage.getItem('blocks')||'[]');
-        state.reviews   = JSON.parse(localStorage.getItem('reviews')||'[]');
-        state.typeGuide = JSON.parse(localStorage.getItem('typeGuide')||'null')||DEFAULT_TYPES;
-        state.streak    = parseInt(localStorage.getItem('streak')||'0');
-        // If we have localStorage data, push it up to Firebase
+        loadFromLocalStorage();
         if(state.dumpItems.length||state.big3.length||state.blocks.length) save();
       }
       showSync('ok');
-      // Animate loading bar then hide overlay
-      const bar = document.getElementById('loadingBar');
-      if(bar) bar.style.width = '100%';
-      setTimeout(() => {
-        const overlay = document.getElementById('loadingOverlay');
-        if(overlay) overlay.style.display = 'none';
-      }, 400);
+      hideLoadingOverlay();
       initApp();
     })
     .catch(() => {
-      // Offline - use localStorage
+      if(done) return;
+      done = true;
+      clearTimeout(timeoutId);
+      clearInterval(barAnim);
       showSync('offline');
-      // Hide overlay even on offline
-      const overlay = document.getElementById('loadingOverlay');
-      if(overlay) { overlay.querySelector('div:nth-child(2)').textContent = '오프라인 모드'; setTimeout(()=>overlay.style.display='none', 800); }
-      state.dumpItems = JSON.parse(localStorage.getItem('dumpItems')||'[]');
-      state.big3      = JSON.parse(localStorage.getItem('big3')||'[]');
-      state.backlog   = JSON.parse(localStorage.getItem('backlog')||'[]');
-      state.blocks    = JSON.parse(localStorage.getItem('blocks')||'[]');
-      state.reviews   = JSON.parse(localStorage.getItem('reviews')||'[]');
-      state.typeGuide = JSON.parse(localStorage.getItem('typeGuide')||'null')||DEFAULT_TYPES;
-      state.streak    = parseInt(localStorage.getItem('streak')||'0');
+      loadFromLocalStorage();
+      hideLoadingOverlay('오프라인 모드');
       initApp();
+      retryFirebase();
     });
+}
+// 오프라인 폴백 후 백그라운드에서 재연결 시도
+function retryFirebase() {
+  let attempts = 0;
+  const retry = setInterval(() => {
+    attempts++;
+    if(attempts > 12) { clearInterval(retry); return; }
+    db.ref(DB_KEY).once('value')
+      .then(snapshot => {
+        clearInterval(retry);
+        const data = snapshot.val();
+        if(data && data.updatedAt > (state._lastSaved||0)) {
+          state.dumpItems = data.dumpItems || state.dumpItems;
+          state.big3      = data.big3      || state.big3;
+          state.backlog   = data.backlog   || state.backlog;
+          state.blocks    = data.blocks    || state.blocks;
+          state.reviews   = data.reviews   || state.reviews;
+          state.streak    = data.streak    || state.streak;
+          renderCurrentTab();
+        }
+        showSync('ok');
+      })
+      .catch(() => {});
+  }, 5000);
 }
 
 // Real-time listener - updates UI when another device saves
