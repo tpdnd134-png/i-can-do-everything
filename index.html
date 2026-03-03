@@ -147,6 +147,218 @@
   .cal-today-btn:hover{background:var(--accent);color:#000;}
   .cal-legend{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);display:flex;align-items:center;gap:6px;}
   .cal-legend-dot{width:6px;height:6px;border-radius:50%;background:var(--accent3);display:inline-block;}
+
+  /* =============================================
+     MOBILE RESPONSIVE (max-width: 768px)
+  ============================================= */
+  @media (max-width: 768px) {
+
+    /* NAV — 탭을 하단 고정 바로 이동 */
+    nav {
+      position: fixed;
+      bottom: 0;
+      top: auto;
+      left: 0; right: 0;
+      z-index: 200;
+      border-top: 1px solid var(--border);
+      border-bottom: none;
+      background: var(--bg);
+      justify-content: space-around;
+      overflow-x: auto;
+    }
+    .tab {
+      font-size: 9px;
+      padding: 10px 8px 6px;
+      border-right: none;
+      border-bottom: none;
+      flex: 1;
+      text-align: center;
+      letter-spacing: 0.5px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      min-width: 0;
+    }
+    .tab.active {
+      border-bottom: none;
+      border-top: 2px solid var(--accent);
+      background: var(--surface);
+    }
+    /* 탭 아이콘 추가 */
+    .tab[onclick*="brain"]::before  { content: '🧠'; font-size: 16px; }
+    .tab[onclick*="big3"]::before   { content: '🎯'; font-size: 16px; }
+    .tab[onclick*="backlog"]::before{ content: '📋'; font-size: 16px; }
+    .tab[onclick*="timebox"]::before{ content: '⏱'; font-size: 16px; }
+    .tab[onclick*="review"]::before { content: '📝'; font-size: 16px; }
+
+    /* 로고 + 동기화 상태 — 상단으로 */
+    nav > div:last-child {
+      display: none; /* 로고 숨김, 공간 절약 */
+    }
+    #syncStatus { display: none !important; }
+    #syncBadge { display: block !important; }
+
+    /* DATE BAR — sticky top 조정 (상단 고정) */
+    .date-bar {
+      top: 0;
+      padding: 0;
+    }
+    .date-display {
+      font-size: 10px;
+      letter-spacing: 1px;
+      min-width: 0;
+      padding: 10px 12px;
+    }
+    .date-nav-btn {
+      padding: 10px 14px;
+      font-size: 18px;
+    }
+    .not-today-banner {
+      padding: 8px 16px;
+      font-size: 9px;
+      letter-spacing: 1px;
+    }
+
+    /* 달력 팝업 — 전체 너비 */
+    #calPopup {
+      left: 8px;
+      right: 8px;
+      transform: none;
+      min-width: 0;
+      width: calc(100vw - 16px);
+      padding: 16px;
+    }
+
+    /* PAGE — 여백 줄이기, 하단 탭바 공간 확보 */
+    .page {
+      padding: 16px 16px 100px;
+    }
+    .page-title {
+      font-size: 40px;
+      letter-spacing: 2px;
+      margin-bottom: 4px;
+    }
+    .page-sub {
+      font-size: 9px;
+      letter-spacing: 1px;
+      margin-bottom: 24px;
+    }
+
+    /* GRID — 1열로 */
+    .grid2, .grid3 { grid-template-columns: 1fr; gap: 12px; }
+
+    /* CARD */
+    .card { padding: 16px; }
+
+    /* BUTTONS */
+    .btn { padding: 12px 20px; font-size: 10px; }
+    .btn-sm { padding: 8px 12px; font-size: 9px; }
+    .btn-xs { padding: 6px 10px; font-size: 9px; }
+
+    /* BRAIN DUMP */
+    textarea.brain-dump { min-height: 120px; font-size: 15px; }
+    .dump-actions { gap: 6px; }
+    .dump-item { padding: 12px; }
+
+    /* BIG 3 */
+    .big3-item { padding: 14px; }
+    .big3-top { gap: 10px; }
+    .big3-num { font-size: 36px; min-width: 30px; }
+    .big3-text { font-size: 15px; }
+    .big3-actions {
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 6px;
+      margin-top: 12px;
+    }
+    /* big3-top을 세로로 */
+    .big3-top { flex-wrap: wrap; }
+    .big3-actions { width: 100%; }
+
+    /* 서브태스크 */
+    .subtask-add { flex-direction: row; }
+    .subtask-add input { font-size: 14px; }
+    .sub-text { font-size: 13px; }
+
+    /* BACKLOG */
+    .backlog-item { padding: 12px; flex-wrap: wrap; gap: 8px; }
+    .filter-row { gap: 6px; }
+    .filter-btn { padding: 6px 10px; font-size: 9px; }
+
+    /* TIME BOXING */
+    .time-grid { grid-template-columns: 52px 1fr; max-height: none; }
+    .time-label { font-size: 9px; padding: 6px 4px; }
+    .time-block { 
+      padding: 8px; 
+      font-size: 12px;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-height: 52px;
+    }
+    .time-block > span { width: 100%; }
+    .time-block > div { margin-left: auto; }
+
+    /* MODAL */
+    .modal {
+      padding: 24px 18px;
+      width: 100%;
+      max-width: 100vw;
+      max-height: 85vh;
+      border-radius: 0;
+      margin: 0;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      top: auto;
+      border-bottom: none;
+    }
+    .modal-overlay {
+      align-items: flex-end;
+    }
+    .modal h2 { font-size: 28px; margin-bottom: 16px; }
+    .modal-actions { flex-wrap: wrap; }
+    .modal-actions .btn { flex: 1; text-align: center; }
+
+    /* FOCUS BANNER */
+    .focus-banner {
+      padding: 10px 16px;
+      font-size: 9px;
+    }
+    .focus-timer { font-size: 22px; }
+
+    /* STAT CARDS */
+    .stat-num { font-size: 40px; }
+    .stat-card { padding: 16px; }
+
+    /* HEADER ROW */
+    .header-row { flex-wrap: wrap; gap: 10px; }
+
+    /* h3 섹션 헤더 */
+    h3 { font-size: 9px; letter-spacing: 2px; margin-bottom: 12px; }
+
+    /* 머스크 원칙 바 */
+    .musk-bar-row { flex-wrap: wrap; }
+
+    /* 로딩 오버레이 */
+    #loadingOverlay > div:first-child { font-size: 36px; }
+
+    /* 입력 필드 — 모바일 확대 방지 */
+    textarea, input[type="text"], select { font-size: 16px !important; }
+
+    /* 터치 타깃 최소 44px */
+    .check-btn { width: 36px; height: 36px; }
+    .sub-check { width: 24px; height: 24px; }
+    .cal-cell { padding: 10px 4px; font-size: 13px; }
+  }
+
+  @media (max-width: 380px) {
+    .page-title { font-size: 32px; }
+    .tab { font-size: 8px; padding: 8px 4px 6px; }
+    .date-display { font-size: 9px; padding: 10px 8px; }
+  }
 </style>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -172,6 +384,8 @@
     <div class="logo" style="border-left:none;padding:14px 0;margin-left:0">EXEC//SYS</div>
   </div>
 </nav>
+<!-- mobile sync badge (shown only on mobile via CSS) -->
+<div id="syncBadge" style="display:none;position:fixed;top:6px;right:10px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--muted);z-index:300;background:var(--bg);padding:2px 6px;border:1px solid var(--border)">연결 중...</div>
 
 <!-- LOADING OVERLAY -->
 <div id="loadingOverlay" style="position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
@@ -442,10 +656,12 @@ const state = {
 // Sync status indicator
 let syncTimeout = null;
 function showSync(status) {
+  const text = status === 'saving' ? '⟳ 저장 중...' : status === 'ok' ? '✓ 동기화됨' : '✕ 오프라인';
+  const color = status === 'saving' ? 'var(--muted)' : status === 'ok' ? 'var(--accent3)' : 'var(--danger)';
   const el = document.getElementById('syncStatus');
-  if(!el) return;
-  el.textContent = status === 'saving' ? '⟳ 저장 중...' : status === 'ok' ? '✓ 동기화됨' : '✕ 오프라인';
-  el.style.color = status === 'saving' ? 'var(--muted)' : status === 'ok' ? 'var(--accent3)' : 'var(--danger)';
+  if(el) { el.textContent = text; el.style.color = color; }
+  const badge = document.getElementById('syncBadge');
+  if(badge) { badge.textContent = text; badge.style.color = color; }
 }
 
 // Save to Firebase + localStorage (localStorage as offline fallback)
