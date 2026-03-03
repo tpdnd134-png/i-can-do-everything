@@ -1208,6 +1208,1397 @@ function iRow(text,type){
 function emptyI(msg){return `<div style="padding:12px;font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);border:1px dashed var(--border);text-align:center">${msg}</div>`;}
 function renderIBig3(){
   const items=state.big3.filter(i=>i.date===activeDate);
+  if(!items.length){
+    document.getElementById('ilist-big3').innerHTML=emptyI('이 날의 Big 3가 없습니다');
+    return;
+  }
+  let html='';
+  items.forEach((it,idx)=>{
+    // Big 3 메인 항목
+    html += iRow(`${idx+1}. ${it.text}`, 'deep');
+    // 서브태스크 — 들여쓰기로 표시
+    const subs = (it.subtasks||[]).filter(s=>!s.done);
+    const doneSubs = (it.subtasks||[]).filter(s=>s.done);
+    subs.forEach(s=>{
+      html += iRowSub(s.text, 'deep', false);
+    });
+    doneSubs.forEach(s=>{
+      html += iRowSub(s.text, 'deep', true);
+    });
+  });
+  document.getElementById('ilist-big3').innerHTML=`<div style="max-height:220px;overflow-y:auto">${html}</div>`;
+}
+function iRowSub(text, type, isDone){
+  const safe=text.replace(/\/g,'\\').replace(/'/g,"\'");
+  return `<div onclick="importTask('${safe}','${type}')" style="display:flex;align-items:center;gap:10px;padding:7px 14px 7px 30px;border:1px solid var(--border);border-top:none;margin-bottom:0;cursor:pointer;background:var(--bg);opacity:${isDone?'.45':'1'}" onmouseover="this.style.borderColor='var(--accent)';this.style.background='var(--surface2)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--bg)'">
+    <span style="color:var(--muted);font-size:10px;flex-shrink:0">${isDone?'✓':'↳'}</span>
+    <span style="flex:1;font-size:12px;${isDone?'text-decoration:line-through;color:var(--muted)':''}">${escHtml(text)}</span>
+    <span style="font-size:9px;color:var(--accent3);border:1px solid var(--accent3);padding:2px 6px;flex-shrink:0">+ IMPORT</span>
+  </div>`;
+}
+function renderIBacklog(){
+  document.getElementById('ilist-backlog').innerHTML=state.backlog.length?`<div style="max-height:160px;overflow-y:auto">${state.backlog.map(i=>iRow(i.text,'admin')).join('')}</div>`:emptyI('Backlog 항목이 없습니다');
+}
+function renderIDump(){
+  const sorted=[...state.dumpItems].sort((a,b)=>({high:0,mid:1,low:2}[a.priority]||2)-({high:0,mid:1,low:2}[b.priority]||2));
+  document.getElementById('ilist-dump').innerHTML=sorted.length?`<div style="max-height:160px;overflow-y:auto">${sorted.map(i=>iRow(i.text,i.priority==='high'?'deep':'admin')).join('')}</div>`:emptyI('Brain Dump 항목이 없습니다');
+}
+function importTask(text,type){
+  document.getElementById('blockTask').value=text;document.getElementById('blockType').value=type;
+  const inp=document.getElementById('blockTask');inp.style.borderColor='var(--accent)';setTimeout(()=>{inp.style.borderColor='var(--border)';},900);
+}
+function saveBlock(){
+  const task=document.getElementById('blockTask').value.trim();if(!task)return;
+  const time=`${document.getElementById('blockHour').value}:${document.getElementById('blockMin').value}`;
+  const type=document.getElementById('blockType').value;
+  const duration=parseInt(document.getElementById('blockDuration').value);
+  if(editingBlockId) {
+    const b=state.blocks.find(b=>b.id===editingBlockId);
+    if(b){b.task=task;b.time=time;b.type=type;b.duration=duration;}
+    editingBlockId=null;
+  } else {
+    state.blocks.push({id:uid(),time,task,type,duration,done:false,date:activeDate});
+  }
+  document.getElementById('blockTask').value='';
+  document.getElementById('importTabsSection').style.display='flex';
+  document.getElementById('importDivider').style.display='block';
+  save();closeModal('blockModal');renderTimeGrid();
+}
+function renderTimeGrid(){
+  const grid=document.getElementById('timeGrid');
+  const tb=state.blocks.filter(b=>b.date===activeDate).sort((a,b)=>a.time.localeCompare(b.time));
+  if(!tb.length){
+    grid.innerHTML=`<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--muted);font-family:'Space Mono',monospace;font-size:11px;border:1px dashed var(--border)">+ 버튼으로 시간 블록을 추가하세요</div>`;
+  } else {
+    grid.innerHTML=tb.map(b=>`
+      <div class="time-label">${b.time}</div>
+      <div class="time-block ${b.type} ${b.done?'done-block':''}" onclick="toggleBlock('${b.id}')">
+        <span>${escHtml(b.task)} <span style="color:var(--muted);font-size:11px">(${b.duration}분)</span></span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="block-tag tag-${b.type}">${b.type.toUpperCase()}</span>
+          <button class="btn btn-sm" style="background:transparent;border:1px solid var(--border);color:var(--muted);font-size:9px;padding:5px 8px" onclick="event.stopPropagation();openEditBlock('${b.id}')" title="편집">✎</button>
+          <button class="btn btn-sm" style="background:var(--accent);color:#000;font-size:9px;padding:5px 8px" onclick="event.stopPropagation();startFocus('${escHtml(b.task)}',${b.duration})">▶</button>
+          <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();removeBlock('${b.id}')" style="padding:5px 8px">✕</button>
+        </div>
+      </div>`).join('');
+  }
+  const tc={};state.typeGuide.forEach(t=>tc[t.key]=0);
+  tb.forEach(b=>tc[b.type]=(tc[b.type]||0)+b.duration);
+  const tot=Object.values(tc).reduce((a,b)=>a+b,0)||1;
+  document.getElementById('progressStats').innerHTML=Object.entries(tc).map(([t,m])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="text-transform:uppercase">${t}</span><span>${m}분 (${Math.round(m/tot*100)}%)</span></div>`).join('');
+}
+function toggleBlock(id){const b=state.blocks.find(b=>b.id===id);if(b){b.done=!b.done;save();renderTimeGrid();}}
+function removeBlock(id){state.blocks=state.blocks.filter(b=>b.id!==id);save();renderTimeGrid();}
+
+// TYPE GUIDE
+function renderTypeGuideDisplay(){
+  const c=document.getElementById('typeGuideDisplay');if(!c)return;
+  c.innerHTML=state.typeGuide.map(t=>`
+    <div style="padding:12px 16px;border:1px solid ${t.borderColor};border-left:4px solid ${t.borderColor};background:${t.bg};display:flex;align-items:center;justify-content:space-between">
+      <div><span style="font-size:13px">${t.emoji} ${t.name}</span><span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);margin-left:10px">${t.desc}</span></div>
+      <span class="block-tag ${t.tagClass}">${t.key.toUpperCase()}</span>
+    </div>`).join('');
+}
+function populateBlockTypeSelect(){
+  const sel=document.getElementById('blockType');if(!sel)return;
+  sel.innerHTML=state.typeGuide.map(t=>`<option value="${t.key}">${t.emoji} ${t.name}</option>`).join('');
+}
+function openTypeGuide(){
+  document.getElementById('typeGuideEditor').innerHTML=state.typeGuide.map((t,i)=>`
+    <div style="background:var(--surface2);border:1px solid var(--border);border-left:4px solid ${t.borderColor};padding:16px;margin-bottom:12px">
+      <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:12px">${t.key.toUpperCase()} 유형</div>
+      <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px">
+        <div><div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:6px">이모지 + 이름</div>
+          <div style="display:flex;gap:6px"><input type="text" id="tge-${i}" value="${t.emoji}" style="width:50px;text-align:center;font-size:16px;padding:8px"><input type="text" id="tgn-${i}" value="${t.name}" style="flex:1"></div>
+        </div>
+        <div><div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:6px">설명</div><input type="text" id="tgd-${i}" value="${t.desc}"></div>
+      </div>
+    </div>`).join('');
+  document.getElementById('typeGuideModal').classList.add('open');
+}
+function saveTypeGuide(){
+  state.typeGuide.forEach((t,i)=>{state.typeGuide[i]={...t,emoji:document.getElementById('tge-'+i).value.trim()||t.emoji,name:document.getElementById('tgn-'+i).value.trim()||t.name,desc:document.getElementById('tgd-'+i).value.trim()};});
+  save();renderTypeGuideDisplay();populateBlockTypeSelect();closeModal('typeGuideModal');
+}
+
+// FOCUS
+function startFocus(task,minutes=25){
+  state.focusSeconds=minutes*60;document.getElementById('focusTask').textContent=task;document.getElementById('focusBanner').style.display='flex';
+  clearInterval(state.focusInterval);
+  state.focusInterval=setInterval(()=>{
+    state.focusSeconds--;
+    const m=Math.floor(state.focusSeconds/60),s=state.focusSeconds%60;
+    document.getElementById('focusTimer').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    if(state.focusSeconds<=0){clearInterval(state.focusInterval);alert('✅ 세션 완료! "'+task+'"');stopFocus();}
+  },1000);
+}
+function stopFocus(){clearInterval(state.focusInterval);document.getElementById('focusBanner').style.display='none';}
+
+// REVIEW
+function saveReview(){
+  const win=document.getElementById('reviewWin').value.trim(),miss=document.getElementById('reviewMiss').value.trim(),improve=document.getElementById('reviewImprove').value.trim();
+  if(!win&&!miss&&!improve)return;
+  state.reviews.unshift({date:activeDate,win,miss,improve,ts:new Date().toLocaleString('ko-KR')});
+  ['reviewWin','reviewMiss','reviewImprove'].forEach(id=>document.getElementById(id).value='');
+  save();renderReviews();alert('리뷰 저장 완료!');
+}
+function renderReviews(){
+  const c=document.getElementById('reviewHistory');
+  if(!state.reviews.length){c.innerHTML=`<div style="padding:24px;text-align:center;color:var(--muted);font-family:'Space Mono',monospace;font-size:11px;border:1px dashed var(--border)">아직 리뷰가 없습니다</div>`;return;}
+  c.innerHTML=state.reviews.map(r=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:16px"><span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--accent)">${r.date}</span><span style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted)">${r.ts||''}</span></div>${r.win?`<div style="margin-bottom:10px"><div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--accent3);margin-bottom:4px">WIN</div><div style="font-size:13px">${escHtml(r.win)}</div></div>`:''} ${r.miss?`<div style="margin-bottom:10px"><div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--accent2);margin-bottom:4px">MISS</div><div style="font-size:13px">${escHtml(r.miss)}</div></div>`:''} ${r.improve?`<div><div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:4px">TOMORROW</div><div style="font-size:13px">${escHtml(r.improve)}</div></div>`:''}</div>`).join('');
+}
+
+// UTILS
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function closeModal(id){
+  document.getElementById(id).classList.remove('open');
+  if(id==='blockModal'){
+    editingBlockId=null;
+    const ts=document.getElementById('importTabsSection');
+    const div=document.getElementById('importDivider');
+    if(ts)ts.style.display='flex';
+    if(div)div.style.display='block';
+    document.getElementById('blockModalTitle').textContent='TIME BLOCK';
+    document.getElementById('blockSaveBtn').textContent='저장';
+  }
+}
+
+// INIT — wrapped so Firebase can call after load
+function initApp() {
+  initBlockModal();
+  renderTypeGuideDisplay();
+  populateBlockTypeSelect();
+  updateDateBar();
+  if(state.dumpItems.filter(i=>(i.date||realToday())===activeDate).length>0){
+    document.getElementById('dumpList').style.display='block';
+  }
+  renderDump();
+  renderBig3();
+}
+
+// Close calendar when clicking outside
+document.addEventListener('click',e=>{
+  const pop=document.getElementById('calPopup');
+  const btn=document.getElementById('dateDisplay');
+  if(pop.style.display==='block'&&!pop.contains(e.target)&&e.target!==btn){pop.style.display='none';}
+});
+
+// Start: load from Firebase
+loadData();
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EXECUTION SYSTEM</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=Noto+Sans+KR:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0a0a0a;--surface:#111;--surface2:#1a1a1a;--border:#2a2a2a;
+    --accent:#e8ff00;--accent2:#ff4d00;--accent3:#00ffcc;--text:#f0f0f0;--muted:#666;--danger:#ff3333;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;overflow-x:hidden;}
+  nav{display:flex;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:100;}
+  .tab{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:2px;padding:16px 20px;cursor:pointer;border-right:1px solid var(--border);color:var(--muted);transition:all .2s;text-transform:uppercase;background:transparent;user-select:none;}
+  .tab:hover{color:var(--text);background:var(--surface);}
+  .tab.active{color:var(--accent);background:var(--surface);border-bottom:2px solid var(--accent);}
+  .logo{font-family:'Bebas Neue',sans-serif;font-size:22px;padding:14px 28px;letter-spacing:4px;margin-left:auto;color:var(--accent);border-left:1px solid var(--border);}
+  .page{display:none;padding:40px;max-width:1200px;margin:0 auto;}
+  .page.active{display:block;animation:fadeIn .25s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .page-title{font-family:'Bebas Neue',sans-serif;font-size:72px;letter-spacing:6px;line-height:1;margin-bottom:8px;}
+  .page-sub{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:48px;}
+  h3{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:16px;}
+  .card{background:var(--surface);border:1px solid var(--border);padding:28px;margin-bottom:20px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;}
+  textarea,input[type="text"],select{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:14px;padding:12px 16px;width:100%;outline:none;transition:border-color .2s;resize:none;}
+  textarea:focus,input:focus,select:focus{border-color:var(--accent);}
+  select option{background:var(--surface2);}
+  textarea.brain-dump{min-height:180px;line-height:1.8;}
+  .btn{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:14px 28px;cursor:pointer;border:none;transition:all .2s;}
+  .btn-primary{background:var(--accent);color:#000;}.btn-primary:hover{background:#fff;}
+  .btn-secondary{background:transparent;border:1px solid var(--border);color:var(--muted);}.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-danger{background:transparent;border:1px solid var(--danger);color:var(--danger);}.btn-danger:hover{background:var(--danger);color:#fff;}
+  .btn-sm{padding:8px 16px;font-size:10px;}.btn-xs{padding:5px 10px;font-size:9px;letter-spacing:1px;}
+
+  .dump-item{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:1px solid var(--border);margin-bottom:6px;background:var(--surface);}
+  .dump-text{font-size:14px;line-height:1.5;margin-bottom:8px;}
+  .dump-actions{display:flex;gap:6px;flex-wrap:wrap;}
+
+  .big3-item{background:var(--surface2);border:1px solid var(--border);border-left:4px solid var(--accent);padding:20px 24px;margin-bottom:16px;}
+  .big3-item.all-done{border-left-color:var(--accent3);opacity:.6;}
+  .big3-top{display:flex;align-items:flex-start;gap:16px;}
+  .big3-num{font-family:'Bebas Neue',sans-serif;font-size:48px;color:var(--accent);line-height:1;min-width:40px;}
+  .big3-item.all-done .big3-num{color:var(--accent3);}
+  .big3-content{flex:1;}
+  .big3-label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:4px;}
+  .big3-text{font-size:16px;font-weight:700;margin-bottom:10px;}
+  .big3-actions{display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
+
+  .subtask-hint{font-family:'Space Mono',monospace;font-size:9px;color:#aaa;letter-spacing:1px;margin:6px 0 12px;padding:9px 12px;border-left:2px solid var(--accent);background:#0f1400;line-height:1.8;}
+  .subtask-list{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+  .subtask-item{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:2px;cursor:pointer;transition:background .15s;border-bottom:1px solid #1c1c1c;}
+  .subtask-item:last-child{border-bottom:none;}
+  .subtask-item:hover{background:rgba(255,255,255,.03);}
+  .subtask-item.done-item{background:rgba(0,255,204,.03);}
+  .sub-check{width:22px;height:22px;border:2px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;border-radius:3px;}
+  .subtask-item:hover .sub-check{border-color:var(--accent3);}
+  .sub-check.done{border-color:var(--accent3);background:var(--accent3);box-shadow:0 0 8px rgba(0,255,204,.3);}
+  .sub-check.done::after{content:'✓';color:#000;font-size:12px;font-weight:900;}
+  .sub-text{flex:1;font-size:14px;line-height:1.4;transition:all .2s;user-select:none;}
+  .sub-text.done{text-decoration:line-through;color:var(--muted);opacity:.6;}
+  .subtask-add{display:flex;gap:8px;margin-top:10px;}
+  .subtask-add input{font-size:12px;padding:8px 12px;}
+  .progress-bar{height:3px;background:var(--surface2);margin-top:8px;overflow:hidden;}
+  .progress-fill{height:100%;background:var(--accent);transition:width .4s ease;}
+  .progress-text{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);margin-top:4px;}
+
+  .filter-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+  .filter-btn{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;padding:6px 14px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;text-transform:uppercase;transition:all .15s;}
+  .filter-btn.active{border-color:var(--accent);color:var(--accent);}
+  .backlog-item{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:1px solid var(--border);margin-bottom:6px;background:var(--surface);transition:background .15s;}
+  .backlog-item:hover{background:var(--surface2);}
+  .cat-badge{font-family:'Space Mono',monospace;font-size:8px;padding:2px 8px;border:1px solid;text-transform:uppercase;flex-shrink:0;margin-top:2px;letter-spacing:1px;}
+
+  .time-grid{display:grid;grid-template-columns:80px 1fr;gap:4px;max-height:600px;overflow-y:auto;}
+  .time-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);padding:6px 8px;text-align:right;display:flex;align-items:center;justify-content:flex-end;letter-spacing:1px;}
+  .time-block{min-height:48px;border:1px solid var(--border);padding:8px 12px;font-size:13px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:space-between;background:var(--surface);}
+  .time-block:hover{border-color:var(--accent);}
+  .time-block.deep{background:#1a1f00;border-color:#3a4a00;}
+  .time-block.admin{background:#0d1a1a;border-color:#0a3333;}
+  .time-block.personal{background:#1a0d1a;border-color:#330033;}
+  .time-block.buffer{background:#1a1000;border-color:#332000;}
+  .time-block.done-block{opacity:.4;text-decoration:line-through;}
+  .block-tag{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:2px 6px;border:1px solid;}
+  .tag-deep{color:var(--accent);border-color:var(--accent);}
+  .tag-admin{color:var(--accent3);border-color:var(--accent3);}
+  .tag-personal{color:#cc88ff;border-color:#cc88ff;}
+  .tag-buffer{color:var(--accent2);border-color:var(--accent2);}
+
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:1000;align-items:center;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);padding:36px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+  .modal h2{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:4px;margin-bottom:24px;color:var(--accent);}
+  .form-row{margin-bottom:16px;}
+  .form-label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;display:block;}
+  .modal-actions{display:flex;gap:12px;margin-top:24px;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);padding:24px;text-align:center;}
+  .stat-num{font-family:'Bebas Neue',sans-serif;font-size:56px;letter-spacing:2px;line-height:1;color:var(--accent);}
+  .stat-label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-top:8px;}
+  .header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+  .divider{border:none;border-top:1px solid var(--border);margin:32px 0;}
+  .check-btn{width:28px;height:28px;border:2px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
+  .check-btn:hover{border-color:var(--accent3);}
+  .check-btn.checked{border-color:var(--accent3);background:var(--accent3);}
+  .check-btn.checked::after{content:'✓';color:#000;font-size:14px;font-weight:900;}
+  .focus-banner{background:var(--accent);color:#000;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:2px;font-weight:700;text-transform:uppercase;}
+  .focus-timer{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:3px;}
+  ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);}
+  .import-tab{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;padding:8px 0;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);flex:1;text-transform:uppercase;transition:all .15s;}
+  .import-tab.active{background:var(--accent);color:#000;border-color:var(--accent);}
+
+  /* DATE BAR */
+  .date-bar{display:flex;align-items:center;justify-content:center;gap:0;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:49px;z-index:99;}
+  .date-nav-btn{font-family:'Space Mono',monospace;font-size:16px;padding:10px 20px;cursor:pointer;border:none;border-right:1px solid var(--border);background:transparent;color:var(--muted);transition:all .15s;user-select:none;}
+  .date-nav-btn:hover{color:var(--accent);background:var(--surface2);}
+  .date-nav-btn:last-child{border-right:none;border-left:1px solid var(--border);}
+  .date-display{font-family:'Space Mono',monospace;font-size:12px;letter-spacing:3px;padding:10px 28px;cursor:pointer;color:var(--text);border:none;background:transparent;transition:all .15s;text-transform:uppercase;min-width:280px;text-align:center;}
+  .date-display:hover{color:var(--accent);}
+  .date-display.future{color:var(--accent3);}
+  .date-display.past{color:var(--muted);}
+  .not-today-banner{background:var(--surface2);border-bottom:2px solid var(--accent3);padding:10px 40px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--accent3);display:none;}
+  .not-today-banner.future{border-color:var(--accent3);color:var(--accent3);}
+  .not-today-banner.past{border-color:var(--muted);color:var(--muted);}
+  /* CUSTOM CALENDAR POPUP */
+  #calPopup{display:none;position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);padding:20px;z-index:500;box-shadow:0 12px 40px rgba(0,0,0,.8);min-width:300px;}
+  .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .cal-month-label{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--accent);}
+  .cal-nav{font-family:'Space Mono',monospace;font-size:14px;padding:4px 12px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .15s;}
+  .cal-nav:hover{color:var(--accent);border-color:var(--accent);}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+  .cal-day-label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;text-align:center;color:var(--muted);padding:4px 0;text-transform:uppercase;}
+  .cal-day-label:first-child{color:#ff6666;}
+  .cal-day-label:last-child{color:#6699ff;}
+  .cal-cell{font-family:'Space Mono',monospace;font-size:11px;text-align:center;padding:7px 4px;cursor:pointer;border:1px solid transparent;transition:all .15s;position:relative;}
+  .cal-cell:hover:not(.empty){border-color:var(--accent);color:var(--accent);}
+  .cal-cell.empty{cursor:default;pointer-events:none;}
+  .cal-cell.today-cell{border-color:var(--accent)!important;color:var(--accent);font-weight:700;}
+  .cal-cell.selected-cell{background:var(--accent);color:#000!important;font-weight:700;border-color:var(--accent)!important;}
+  .cal-cell.has-data::after{content:'';position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--accent3);}
+  .cal-cell.selected-cell.has-data::after{background:#000;}
+  .cal-cell.sun{color:#ff6666;}
+  .cal-cell.sat{color:#6699ff;}
+  .cal-cell.other-month{opacity:.3;}
+  .cal-footer{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+  .cal-today-btn{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;padding:6px 14px;cursor:pointer;border:1px solid var(--accent);background:transparent;color:var(--accent);text-transform:uppercase;transition:all .15s;}
+  .cal-today-btn:hover{background:var(--accent);color:#000;}
+  .cal-legend{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+  .cal-legend-dot{width:6px;height:6px;border-radius:50%;background:var(--accent3);display:inline-block;}
+
+  /* =============================================
+     MOBILE RESPONSIVE (max-width: 768px)
+  ============================================= */
+  @media (max-width: 768px) {
+
+    /* NAV — 탭을 하단 고정 바로 이동 */
+    nav {
+      position: fixed;
+      bottom: 0;
+      top: auto;
+      left: 0; right: 0;
+      z-index: 200;
+      border-top: 1px solid var(--border);
+      border-bottom: none;
+      background: var(--bg);
+      justify-content: space-around;
+      overflow-x: auto;
+    }
+    .tab {
+      font-size: 9px;
+      padding: 10px 8px 6px;
+      border-right: none;
+      border-bottom: none;
+      flex: 1;
+      text-align: center;
+      letter-spacing: 0.5px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      min-width: 0;
+    }
+    .tab.active {
+      border-bottom: none;
+      border-top: 2px solid var(--accent);
+      background: var(--surface);
+    }
+    /* 탭 아이콘 추가 */
+    .tab[onclick*="brain"]::before  { content: '🧠'; font-size: 16px; }
+    .tab[onclick*="big3"]::before   { content: '🎯'; font-size: 16px; }
+    .tab[onclick*="backlog"]::before{ content: '📋'; font-size: 16px; }
+    .tab[onclick*="timebox"]::before{ content: '⏱'; font-size: 16px; }
+    .tab[onclick*="review"]::before { content: '📝'; font-size: 16px; }
+
+    /* 로고 + 동기화 상태 — 상단으로 */
+    nav > div:last-child {
+      display: none; /* 로고 숨김, 공간 절약 */
+    }
+    #syncStatus { display: none !important; }
+    #syncBadge { display: block !important; }
+
+    /* DATE BAR — sticky top 조정 (상단 고정) */
+    .date-bar {
+      top: 0;
+      padding: 0;
+    }
+    .date-display {
+      font-size: 10px;
+      letter-spacing: 1px;
+      min-width: 0;
+      padding: 10px 12px;
+    }
+    .date-nav-btn {
+      padding: 10px 14px;
+      font-size: 18px;
+    }
+    .not-today-banner {
+      padding: 8px 16px;
+      font-size: 9px;
+      letter-spacing: 1px;
+    }
+
+    /* 달력 팝업 — 전체 너비 */
+    #calPopup {
+      left: 8px;
+      right: 8px;
+      transform: none;
+      min-width: 0;
+      width: calc(100vw - 16px);
+      padding: 16px;
+    }
+
+    /* PAGE — 여백 줄이기, 하단 탭바 공간 확보 */
+    .page {
+      padding: 16px 16px 100px;
+    }
+    .page-title {
+      font-size: 40px;
+      letter-spacing: 2px;
+      margin-bottom: 4px;
+    }
+    .page-sub {
+      font-size: 9px;
+      letter-spacing: 1px;
+      margin-bottom: 24px;
+    }
+
+    /* GRID — 1열로 */
+    .grid2, .grid3 { grid-template-columns: 1fr; gap: 12px; }
+
+    /* CARD */
+    .card { padding: 16px; }
+
+    /* BUTTONS */
+    .btn { padding: 12px 20px; font-size: 10px; }
+    .btn-sm { padding: 8px 12px; font-size: 9px; }
+    .btn-xs { padding: 6px 10px; font-size: 9px; }
+
+    /* BRAIN DUMP */
+    textarea.brain-dump { min-height: 120px; font-size: 15px; }
+    .dump-actions { gap: 6px; }
+    .dump-item { padding: 12px; }
+
+    /* BIG 3 */
+    .big3-item { padding: 14px; }
+    .big3-top { gap: 10px; }
+    .big3-num { font-size: 36px; min-width: 30px; }
+    .big3-text { font-size: 15px; }
+    .big3-actions {
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 6px;
+      margin-top: 12px;
+    }
+    /* big3-top을 세로로 */
+    .big3-top { flex-wrap: wrap; }
+    .big3-actions { width: 100%; }
+
+    /* 서브태스크 */
+    .subtask-add { flex-direction: row; }
+    .subtask-add input { font-size: 14px; }
+    .sub-text { font-size: 13px; }
+
+    /* BACKLOG */
+    .backlog-item { padding: 12px; flex-wrap: wrap; gap: 8px; }
+    .filter-row { gap: 6px; }
+    .filter-btn { padding: 6px 10px; font-size: 9px; }
+
+    /* TIME BOXING */
+    .time-grid { grid-template-columns: 52px 1fr; max-height: none; }
+    .time-label { font-size: 9px; padding: 6px 4px; }
+    .time-block { 
+      padding: 8px; 
+      font-size: 12px;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-height: 52px;
+    }
+    .time-block > span { width: 100%; }
+    .time-block > div { margin-left: auto; }
+
+    /* MODAL */
+    .modal {
+      padding: 24px 18px;
+      width: 100%;
+      max-width: 100vw;
+      max-height: 85vh;
+      border-radius: 0;
+      margin: 0;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      top: auto;
+      border-bottom: none;
+    }
+    .modal-overlay {
+      align-items: flex-end;
+    }
+    .modal h2 { font-size: 28px; margin-bottom: 16px; }
+    .modal-actions { flex-wrap: wrap; }
+    .modal-actions .btn { flex: 1; text-align: center; }
+
+    /* FOCUS BANNER */
+    .focus-banner {
+      padding: 10px 16px;
+      font-size: 9px;
+    }
+    .focus-timer { font-size: 22px; }
+
+    /* STAT CARDS */
+    .stat-num { font-size: 40px; }
+    .stat-card { padding: 16px; }
+
+    /* HEADER ROW */
+    .header-row { flex-wrap: wrap; gap: 10px; }
+
+    /* h3 섹션 헤더 */
+    h3 { font-size: 9px; letter-spacing: 2px; margin-bottom: 12px; }
+
+    /* 머스크 원칙 바 */
+    .musk-bar-row { flex-wrap: wrap; }
+
+    /* 로딩 오버레이 */
+    #loadingOverlay > div:first-child { font-size: 36px; }
+
+    /* 입력 필드 — 모바일 확대 방지 */
+    textarea, input[type="text"], select { font-size: 16px !important; }
+
+    /* 터치 타깃 최소 44px */
+    .check-btn { width: 36px; height: 36px; }
+    .sub-check { width: 26px; height: 26px; }
+    .subtask-item button { opacity: 0.4 !important; }
+    .subtask-item { padding: 11px 8px; }
+    .cal-cell { padding: 10px 4px; font-size: 13px; }
+  }
+
+  @media (max-width: 380px) {
+    .page-title { font-size: 32px; }
+    .tab { font-size: 8px; padding: 8px 4px 6px; }
+    .date-display { font-size: 9px; padding: 10px 8px; }
+  }
+</style>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<div class="focus-banner" id="focusBanner" style="display:none">
+  <span>🎯 FOCUS — <span id="focusTask">집중 중</span></span>
+  <div style="display:flex;align-items:center;gap:20px">
+    <span class="focus-timer" id="focusTimer">25:00</span>
+    <button class="btn btn-sm" style="background:#000;color:var(--accent)" onclick="stopFocus()">STOP</button>
+  </div>
+</div>
+
+<nav>
+  <div class="tab active" onclick="switchTab('brain')">01 Brain Dump</div>
+  <div class="tab" onclick="switchTab('big3')">02 Big 3</div>
+  <div class="tab" onclick="switchTab('backlog')">03 Backlog</div>
+  <div class="tab" onclick="switchTab('timebox')">04 Time Boxing</div>
+  <div class="tab" onclick="switchTab('review')">05 Review</div>
+  <div style="display:flex;align-items:center;gap:16px;margin-left:auto;border-left:1px solid var(--border);padding:0 24px">
+    <span id="syncStatus" style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--muted)">연결 중...</span>
+    <div class="logo" style="border-left:none;padding:14px 0;margin-left:0">EXEC//SYS</div>
+  </div>
+</nav>
+<!-- mobile sync badge (shown only on mobile via CSS) -->
+<div id="syncBadge" style="display:none;position:fixed;top:6px;right:10px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--muted);z-index:300;background:var(--bg);padding:2px 6px;border:1px solid var(--border)">연결 중...</div>
+
+<!-- LOADING OVERLAY -->
+<div id="loadingOverlay" style="position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:48px;letter-spacing:6px;color:var(--accent)">EXEC//SYS</div>
+  <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:3px;color:var(--muted)">Firebase 연결 중...</div>
+  <div style="width:200px;height:2px;background:var(--surface2);margin-top:8px"><div id="loadingBar" style="height:100%;background:var(--accent);width:0%;transition:width .4s ease"></div></div>
+</div>
+
+<!-- DATE BAR -->
+<div class="date-bar" id="dateBar">
+  <button class="date-nav-btn" onclick="shiftDate(-1)">←</button>
+  <div style="position:relative;display:flex;align-items:center;">
+    <button class="date-display" id="dateDisplay" onclick="toggleCal()"></button>
+    <div id="calPopup">
+      <div class="cal-header">
+        <button class="cal-nav" onclick="calShiftMonth(-1)">◀</button>
+        <div class="cal-month-label" id="calMonthLabel"></div>
+        <button class="cal-nav" onclick="calShiftMonth(1)">▶</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-footer">
+        <button class="cal-today-btn" onclick="goToday()">● 오늘</button>
+        <div class="cal-legend"><span class="cal-legend-dot"></span> 데이터 있음</div>
+      </div>
+    </div>
+  </div>
+  <button class="date-nav-btn" onclick="shiftDate(1)">→</button>
+</div>
+<div class="not-today-banner" id="notTodayBanner"></div>
+
+<!-- 01 BRAIN DUMP -->
+<div class="page active" id="page-brain">
+  <div class="page-title">BRAIN<br>DUMP</div>
+  <div class="page-sub">머릿속을 비워라 — 판단 없이 전부 쏟아내라</div>
+  <div class="card">
+    <h3>① 지금 머릿속에 있는 모든 것</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;font-family:'Space Mono',monospace;letter-spacing:1px">걱정, 할 일, 아이디어 — 한 줄에 하나씩, 판단 없이</p>
+    <textarea class="brain-dump" id="dumpInput" placeholder="예:&#10;다큐 촬영 시작해야 함&#10;홍대 배달 스케줄 확인&#10;카메라 배터리 충전&#10;언젠가 제주도 여행 가고 싶음&#10;유튜브 채널 만들어볼까?"></textarea>
+    <div style="display:flex;gap:12px;margin-top:12px">
+      <button class="btn btn-primary" onclick="processDump()">PROCESS →</button>
+      <button class="btn btn-secondary" onclick="clearDump()">CLEAR</button>
+    </div>
+  </div>
+  <div id="dumpList" style="display:none">
+    <hr class="divider">
+    <div class="header-row">
+      <div>
+        <h3 style="margin-bottom:6px">② 각 항목을 분류하라 — <span id="dumpCount">0</span>개 남음</h3>
+        <p style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px">→ BIG 3: 오늘 반드시 &nbsp;|&nbsp; → 나중에 / 언젠가: Backlog 보관 &nbsp;|&nbsp; ✕: 잡음 제거</p>
+      </div>
+    </div>
+    <div id="dumpItems"></div>
+  </div>
+</div>
+
+<!-- 02 BIG 3 -->
+<div class="page" id="page-big3">
+  <div class="page-title">BIG<br>THREE</div>
+  <div class="page-sub">오늘 반드시 달성할 3가지 — 서브태스크로 쪼개야 실행된다</div>
+  <div id="big3Container"></div>
+  <div class="card">
+    <h3>새 목표 추가</h3>
+    <div style="display:flex;gap:12px">
+      <input type="text" id="big3Input" placeholder="오늘의 핵심 목표 (뭉뚱그려도 됨 — 아래서 쪼개세요)" style="flex:1">
+      <button class="btn btn-primary" onclick="addBig3()">ADD</button>
+    </div>
+  </div>
+  <hr class="divider">
+  <div class="grid3">
+    <div class="stat-card"><div class="stat-num" id="s-done">0</div><div class="stat-label">Completed Today</div></div>
+    <div class="stat-card"><div class="stat-num" id="s-rate">0%</div><div class="stat-label">Completion Rate</div></div>
+    <div class="stat-card"><div class="stat-num" id="s-streak">0</div><div class="stat-label">Day Streak</div></div>
+  </div>
+</div>
+
+<!-- 03 BACKLOG -->
+<div class="page" id="page-backlog">
+  <div class="page-title">BACK<br>LOG</div>
+  <div class="page-sub">Big 3가 아닌 것들 — 잃어버리지 않되, 지금 신경 쓰지 않는다</div>
+  <div class="header-row">
+    <div class="filter-row" style="margin-bottom:0">
+      <button class="filter-btn active" onclick="filterBacklog('all',this)">전체</button>
+      <button class="filter-btn" onclick="filterBacklog('later',this)">나중에</button>
+      <button class="filter-btn" onclick="filterBacklog('someday',this)">언젠가</button>
+      <button class="filter-btn" onclick="filterBacklog('idea',this)">아이디어</button>
+    </div>
+    <button class="btn btn-sm btn-primary" onclick="openAddBacklog()">+ ADD</button>
+  </div>
+  <div id="backlogList"></div>
+</div>
+
+<!-- 04 TIME BOXING -->
+<div class="page" id="page-timebox">
+  <div class="page-title">TIME<br>BOXING</div>
+  <div class="page-sub">시간을 소유하라 — 반응하지 말고 설계하라</div>
+  <div class="grid2" style="margin-bottom:24px">
+    <div>
+      <div class="header-row">
+        <h3>오늘의 시간표</h3>
+        <button class="btn btn-sm btn-primary" onclick="openAddBlock()">+ BLOCK</button>
+      </div>
+      <div class="time-grid" id="timeGrid"></div>
+    </div>
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <h3 style="margin-bottom:0">블록 유형 가이드</h3>
+        <button class="btn btn-sm btn-secondary" onclick="openTypeGuide()" style="font-size:9px;padding:6px 12px">✎ 편집</button>
+      </div>
+      <div id="typeGuideDisplay" style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px"></div>
+      <h3>머스크 시간 배분 원칙</h3>
+      <div style="font-size:13px;color:var(--muted)">
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span>딥 워크 (핵심 목표)</span><span style="color:var(--accent);font-family:'Space Mono',monospace">60%</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span>행정/소통/회의</span><span style="color:var(--accent3);font-family:'Space Mono',monospace">20%</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span>버퍼/이동/전환</span><span style="color:var(--accent2);font-family:'Space Mono',monospace">10%</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0"><span>개인/재충전</span><span style="color:#cc88ff;font-family:'Space Mono',monospace">10%</span></div>
+      </div>
+      <div style="margin-top:24px"><h3>오늘 진행 현황</h3><div id="progressStats" style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted)"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 05 REVIEW -->
+<div class="page" id="page-review">
+  <div class="page-title">DAILY<br>REVIEW</div>
+  <div class="page-sub">반성 없이 성장 없다 — 매일 밤 5분의 의식</div>
+  <div class="grid2">
+    <div>
+      <div class="card"><h3>오늘의 WIN</h3><textarea style="min-height:100px" id="reviewWin" placeholder="오늘 잘한 것, 달성한 것..."></textarea></div>
+      <div class="card"><h3>오늘의 MISS</h3><textarea style="min-height:100px" id="reviewMiss" placeholder="놓친 것, 더 잘할 수 있었던 것..."></textarea></div>
+      <div class="card"><h3>내일의 1가지 변화</h3><textarea style="min-height:80px" id="reviewImprove" placeholder="내일 딱 하나만 바꾼다면?"></textarea></div>
+      <button class="btn btn-primary" style="width:100%" onclick="saveReview()">리뷰 저장</button>
+    </div>
+    <div><h3>이전 리뷰</h3><div id="reviewHistory" style="max-height:520px;overflow-y:auto"></div></div>
+  </div>
+</div>
+
+<!-- BLOCK MODAL -->
+<div class="modal-overlay" id="blockModal">
+  <div class="modal" style="width:580px">
+    <h2 id="blockModalTitle">TIME BLOCK</h2>
+    <div id="importTabsSection" style="display:flex;gap:4px;margin-bottom:12px">
+      <button class="import-tab active" id="itab-big3" onclick="switchImportTab('big3')">★ Big 3</button>
+      <button class="import-tab" id="itab-backlog" onclick="switchImportTab('backlog')">Backlog</button>
+      <button class="import-tab" id="itab-dump" onclick="switchImportTab('dump')">Brain Dump</button>
+    </div>
+    <div id="ilist-big3" style="margin-bottom:14px"></div>
+    <div id="ilist-backlog" style="display:none;margin-bottom:14px"></div>
+    <div id="ilist-dump" style="display:none;margin-bottom:14px"></div>
+    <div id="importDivider" style="border-top:1px solid var(--border);padding-top:16px;margin-bottom:4px">
+      <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted)">또는 직접 입력</span>
+    </div>
+    <div class="form-row"><label class="form-label">시간</label>
+      <div style="display:flex;gap:8px">
+        <select id="blockHour" style="flex:1"></select>
+        <span style="padding:12px;color:var(--muted);font-family:'Space Mono',monospace">:</span>
+        <select id="blockMin" style="flex:1"><option value="00">00</option><option value="30">30</option></select>
+      </div>
+    </div>
+    <div class="form-row"><label class="form-label">내용</label><input type="text" id="blockTask" placeholder="무엇을 할 것인가?"></div>
+    <div class="form-row"><label class="form-label">유형</label><select id="blockType"></select></div>
+    <div class="form-row"><label class="form-label">소요 시간</label>
+      <select id="blockDuration">
+        <option value="30">30분</option><option value="60" selected>60분</option>
+        <option value="90">90분</option><option value="120">120분</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button id="blockSaveBtn" class="btn btn-primary" onclick="saveBlock()">저장</button>
+      <button class="btn btn-secondary" onclick="closeModal('blockModal')">취소</button>
+    </div>
+  </div>
+</div>
+
+<!-- BACKLOG MODAL -->
+<div class="modal-overlay" id="backlogModal">
+  <div class="modal">
+    <h2>BACKLOG 추가</h2>
+    <div class="form-row"><label class="form-label">내용</label><input type="text" id="backlogTask" placeholder="할 일, 아이디어..."></div>
+    <div class="form-row"><label class="form-label">분류</label>
+      <select id="backlogCategory">
+        <option value="later">나중에 — 곧 할 것, 구체적 계획은 없지만</option>
+        <option value="someday">언젠가 — 막연하지만 하고 싶은 것</option>
+        <option value="idea">아이디어 — 아직 행동이 아닌 생각</option>
+      </select>
+    </div>
+    <div class="form-row"><label class="form-label">메모 (선택)</label>
+      <textarea id="backlogNote" style="min-height:60px" placeholder="왜 중요한가? 어떤 맥락인가?"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveBacklogItem()">저장</button>
+      <button class="btn btn-secondary" onclick="closeModal('backlogModal')">취소</button>
+    </div>
+  </div>
+</div>
+
+<!-- BIG3 → BACKLOG MODAL -->
+<div class="modal-overlay" id="b3BacklogModal">
+  <div class="modal" style="width:420px">
+    <h2>BACKLOG으로 이동</h2>
+    <p style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:16px">이 태스크를 Backlog의 어느 카테고리로 보낼까요?</p>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);padding:12px 16px;font-size:14px;margin-bottom:24px" id="b3BacklogText"></div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn btn-secondary" style="text-align:left;padding:14px 20px;border-color:#6699aa44;justify-content:flex-start" onclick="confirmBig3ToBacklog('later')">
+        <span style="color:#6699aa;font-size:13px;font-weight:700;letter-spacing:1px">나중에</span>
+        <span style="display:block;font-size:10px;color:var(--muted);margin-top:4px;font-weight:400;letter-spacing:0">곧 할 것, 구체적 계획은 없지만</span>
+      </button>
+      <button class="btn btn-secondary" style="text-align:left;padding:14px 20px;border-color:#aaa86644;justify-content:flex-start" onclick="confirmBig3ToBacklog('someday')">
+        <span style="color:#aaa866;font-size:13px;font-weight:700;letter-spacing:1px">언젠가</span>
+        <span style="display:block;font-size:10px;color:var(--muted);margin-top:4px;font-weight:400;letter-spacing:0">막연하지만 하고 싶은 것</span>
+      </button>
+      <button class="btn btn-secondary" style="text-align:left;padding:14px 20px;border-color:#bb886644;justify-content:flex-start" onclick="confirmBig3ToBacklog('idea')">
+        <span style="color:#bb8866;font-size:13px;font-weight:700;letter-spacing:1px">아이디어</span>
+        <span style="display:block;font-size:10px;color:var(--muted);margin-top:4px;font-weight:400;letter-spacing:0">아직 행동이 아닌 생각</span>
+      </button>
+    </div>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn btn-secondary" onclick="closeModal('b3BacklogModal')">취소</button>
+    </div>
+  </div>
+</div>
+
+<!-- TYPE GUIDE MODAL -->
+<div class="modal-overlay" id="typeGuideModal">
+  <div class="modal" style="width:580px">
+    <h2>유형 가이드 편집</h2>
+    <p style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:20px">각 유형의 이름과 설명을 자유롭게 수정하세요</p>
+    <div id="typeGuideEditor"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveTypeGuide()">저장</button>
+      <button class="btn btn-secondary" onclick="closeModal('typeGuideModal')">취소</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DEFAULT_TYPES = [
+  {key:'deep',emoji:'🔴',name:'딥 워크',desc:'핵심 목표 집중',borderColor:'#3a4a00',bg:'#1a1f00',tagClass:'tag-deep'},
+  {key:'admin',emoji:'🔵',name:'행정/소통',desc:'이메일, 회의, 소통',borderColor:'#0a3333',bg:'#0d1a1a',tagClass:'tag-admin'},
+  {key:'personal',emoji:'🟣',name:'개인/재충전',desc:'운동, 식사, 휴식',borderColor:'#330033',bg:'#1a0d1a',tagClass:'tag-personal'},
+  {key:'buffer',emoji:'🟡',name:'버퍼/전환',desc:'이동, 준비, 전환 시간',borderColor:'#332000',bg:'#1a1000',tagClass:'tag-buffer'},
+];
+
+// ===== FIREBASE SETUP =====
+const firebaseConfig = {
+  apiKey: "AIzaSyD-Cdefig4oylG2t7lcWkbRZL_wUks109E",
+  authDomain: "i-can-do-everything-9b73a.firebaseapp.com",
+  projectId: "i-can-do-everything-9b73a",
+  storageBucket: "i-can-do-everything-9b73a.firebasestorage.app",
+  messagingSenderId: "353761374764",
+  appId: "1:353761374764:web:5004c7c80416f323d95789",
+  databaseURL: "https://i-can-do-everything-9b73a-default-rtdb.firebaseio.com"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const DB_KEY = 'execsys/v1'; // root path in Firebase
+
+const state = {
+  dumpItems: [],
+  big3:      [],
+  backlog:   [],
+  blocks:    [],
+  reviews:   [],
+  typeGuide: DEFAULT_TYPES,
+  streak:    0,
+  focusInterval:null, focusSeconds:0
+};
+
+// Sync status indicator
+let syncTimeout = null;
+function showSync(status) {
+  const text = status === 'saving' ? '⟳ 저장 중...' : status === 'ok' ? '✓ 동기화됨' : '✕ 오프라인';
+  const color = status === 'saving' ? 'var(--muted)' : status === 'ok' ? 'var(--accent3)' : 'var(--danger)';
+  const el = document.getElementById('syncStatus');
+  if(el) { el.textContent = text; el.style.color = color; }
+  const badge = document.getElementById('syncBadge');
+  if(badge) { badge.textContent = text; badge.style.color = color; }
+}
+
+// Save to Firebase + localStorage (localStorage as offline fallback)
+function save() {
+  // Always save to localStorage as fallback
+  ['dumpItems','big3','backlog','blocks','reviews','typeGuide'].forEach(k=>localStorage.setItem(k,JSON.stringify(state[k])));
+  localStorage.setItem('streak', state.streak);
+
+  // Save to Firebase (debounced 800ms)
+  clearTimeout(syncTimeout);
+  showSync('saving');
+  syncTimeout = setTimeout(() => {
+    const payload = {
+      dumpItems: state.dumpItems,
+      big3:      state.big3,
+      backlog:   state.backlog,
+      blocks:    state.blocks,
+      reviews:   state.reviews,
+      typeGuide: state.typeGuide,
+      streak:    state.streak,
+      updatedAt: Date.now()
+    };
+    db.ref(DB_KEY).set(payload)
+      .then(() => showSync('ok'))
+      .catch(() => showSync('offline'));
+  }, 800);
+}
+
+// Load from Firebase on startup, fallback to localStorage
+function loadData() {
+  showSync('saving');
+  // Animate loading bar
+  let pct = 0;
+  const bar = document.getElementById('loadingBar');
+  const barAnim = setInterval(() => { pct = Math.min(pct + 8, 85); if(bar) bar.style.width = pct + '%'; if(pct>=85) clearInterval(barAnim); }, 80);
+  db.ref(DB_KEY).once('value')
+    .then(snapshot => {
+      const data = snapshot.val();
+      if(data) {
+        state.dumpItems = data.dumpItems || [];
+        state.big3      = data.big3      || [];
+        state.backlog   = data.backlog   || [];
+        state.blocks    = data.blocks    || [];
+        state.reviews   = data.reviews   || [];
+        state.typeGuide = data.typeGuide || DEFAULT_TYPES;
+        state.streak    = data.streak    || 0;
+        // Also update localStorage
+        ['dumpItems','big3','backlog','blocks','reviews','typeGuide'].forEach(k=>localStorage.setItem(k,JSON.stringify(state[k])));
+        localStorage.setItem('streak', state.streak);
+      } else {
+        // No Firebase data yet — load from localStorage
+        state.dumpItems = JSON.parse(localStorage.getItem('dumpItems')||'[]');
+        state.big3      = JSON.parse(localStorage.getItem('big3')||'[]');
+        state.backlog   = JSON.parse(localStorage.getItem('backlog')||'[]');
+        state.blocks    = JSON.parse(localStorage.getItem('blocks')||'[]');
+        state.reviews   = JSON.parse(localStorage.getItem('reviews')||'[]');
+        state.typeGuide = JSON.parse(localStorage.getItem('typeGuide')||'null')||DEFAULT_TYPES;
+        state.streak    = parseInt(localStorage.getItem('streak')||'0');
+        // If we have localStorage data, push it up to Firebase
+        if(state.dumpItems.length||state.big3.length||state.blocks.length) save();
+      }
+      showSync('ok');
+      // Animate loading bar then hide overlay
+      const bar = document.getElementById('loadingBar');
+      if(bar) bar.style.width = '100%';
+      setTimeout(() => {
+        const overlay = document.getElementById('loadingOverlay');
+        if(overlay) overlay.style.display = 'none';
+      }, 400);
+      initApp();
+    })
+    .catch(() => {
+      // Offline - use localStorage
+      showSync('offline');
+      // Hide overlay even on offline
+      const overlay = document.getElementById('loadingOverlay');
+      if(overlay) { overlay.querySelector('div:nth-child(2)').textContent = '오프라인 모드'; setTimeout(()=>overlay.style.display='none', 800); }
+      state.dumpItems = JSON.parse(localStorage.getItem('dumpItems')||'[]');
+      state.big3      = JSON.parse(localStorage.getItem('big3')||'[]');
+      state.backlog   = JSON.parse(localStorage.getItem('backlog')||'[]');
+      state.blocks    = JSON.parse(localStorage.getItem('blocks')||'[]');
+      state.reviews   = JSON.parse(localStorage.getItem('reviews')||'[]');
+      state.typeGuide = JSON.parse(localStorage.getItem('typeGuide')||'null')||DEFAULT_TYPES;
+      state.streak    = parseInt(localStorage.getItem('streak')||'0');
+      initApp();
+    });
+}
+
+// Real-time listener - updates UI when another device saves
+db.ref(DB_KEY).on('value', snapshot => {
+  const data = snapshot.val();
+  if(!data) return;
+  // Only update if remote is newer
+  if(data.updatedAt && data.updatedAt > (state._lastSaved||0)) {
+    state.dumpItems = data.dumpItems || state.dumpItems;
+    state.big3      = data.big3      || state.big3;
+    state.backlog   = data.backlog   || state.backlog;
+    state.blocks    = data.blocks    || state.blocks;
+    state.reviews   = data.reviews   || state.reviews;
+    state.streak    = data.streak    || state.streak;
+    state._lastSaved = data.updatedAt;
+    showSync('ok');
+    renderCurrentTab();
+    renderCal && renderCal();
+  }
+});
+
+// ===== DATE SYSTEM =====
+let activeDate = realToday(); // yyyy-mm-dd string
+
+function realToday() {
+  return new Date().toISOString().split('T')[0];
+}
+function today() {
+  return activeDate; // all render functions use this
+}
+function formatDateDisplay(d) {
+  const parts = d.split('-');
+  const dt = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+  const days = ['일','월','화','수','목','금','토'];
+  const dayName = days[dt.getDay()];
+  const rt = realToday();
+  const diff = dateDiffDays(rt, d);
+  let label = '';
+  if(diff === 0) label = 'TODAY';
+  else if(diff === 1) label = '내일';
+  else if(diff === -1) label = '어제';
+  else if(diff > 1) label = `+${diff}일 후`;
+  else label = `${Math.abs(diff)}일 전`;
+  return `${parts[0]}.${parts[1]}.${parts[2]} (${dayName}) — ${label}`;
+}
+function dateDiffDays(from, to) {
+  const a = new Date(from), b = new Date(to);
+  return Math.round((b - a) / 86400000);
+}
+function shiftDate(delta) {
+  const parts = activeDate.split('-');
+  const dt = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+  dt.setDate(dt.getDate() + delta);
+  activeDate = dt.toISOString().split('T')[0];
+  updateDateBar();
+  renderCurrentTab();
+}
+// ===== CALENDAR =====
+let calViewYear, calViewMonth; // currently displayed month
+
+function getDatesWithData() {
+  const set = new Set();
+  [...state.big3, ...state.blocks, ...state.reviews].forEach(i => { if(i.date) set.add(i.date); });
+  state.dumpItems.forEach(i => { if(i.date) set.add(i.date); });
+  return set;
+}
+
+function toggleCal() {
+  const pop = document.getElementById('calPopup');
+  const visible = pop.style.display === 'block';
+  if(!visible) {
+    const parts = activeDate.split('-');
+    calViewYear = parseInt(parts[0]);
+    calViewMonth = parseInt(parts[1]) - 1; // 0-indexed
+    renderCal();
+    pop.style.display = 'block';
+  } else {
+    pop.style.display = 'none';
+  }
+}
+
+function calShiftMonth(delta) {
+  calViewMonth += delta;
+  if(calViewMonth < 0) { calViewMonth = 11; calViewYear--; }
+  if(calViewMonth > 11) { calViewMonth = 0; calViewYear++; }
+  renderCal();
+}
+
+function renderCal() {
+  const MONTHS = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+  document.getElementById('calMonthLabel').textContent = MONTHS[calViewMonth] + ' ' + calViewYear;
+
+  const withData = getDatesWithData();
+  const rt = realToday();
+  const grid = document.getElementById('calGrid');
+
+  // Day labels
+  const dayLabels = ['일','월','화','수','목','금','토'];
+  let html = dayLabels.map(d => `<div class="cal-day-label">${d}</div>`).join('');
+
+  // First day of month, last day
+  const firstDay = new Date(calViewYear, calViewMonth, 1).getDay(); // 0=Sun
+  const lastDate = new Date(calViewYear, calViewMonth + 1, 0).getDate();
+
+  // Prev month padding
+  const prevLastDate = new Date(calViewYear, calViewMonth, 0).getDate();
+  for(let i = firstDay - 1; i >= 0; i--) {
+    const d = prevLastDate - i;
+    const m = calViewMonth === 0 ? 12 : calViewMonth;
+    const y = calViewMonth === 0 ? calViewYear - 1 : calViewYear;
+    const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    html += calCell(d, dateStr, 'other-month', withData, rt);
+  }
+
+  // Current month
+  for(let d = 1; d <= lastDate; d++) {
+    const dateStr = `${calViewYear}-${String(calViewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dow = new Date(calViewYear, calViewMonth, d).getDay();
+    let extra = dow === 0 ? 'sun' : dow === 6 ? 'sat' : '';
+    html += calCell(d, dateStr, extra, withData, rt);
+  }
+
+  // Next month padding (fill to 6 rows = 42 cells)
+  const total = firstDay + lastDate;
+  const nextCells = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for(let d = 1; d <= nextCells; d++) {
+    const m = calViewMonth === 11 ? 1 : calViewMonth + 2;
+    const y = calViewMonth === 11 ? calViewYear + 1 : calViewYear;
+    const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    html += calCell(d, dateStr, 'other-month', withData, rt);
+  }
+
+  grid.innerHTML = html;
+}
+
+function calCell(d, dateStr, extra, withData, rt) {
+  let cls = 'cal-cell';
+  if(extra) cls += ' ' + extra;
+  if(dateStr === rt) cls += ' today-cell';
+  if(dateStr === activeDate) cls += ' selected-cell';
+  if(withData.has(dateStr)) cls += ' has-data';
+  return `<div class="${cls}" onclick="selectCalDate('${dateStr}')">${d}</div>`;
+}
+
+function selectCalDate(dateStr) {
+  activeDate = dateStr;
+  document.getElementById('calPopup').style.display = 'none';
+  updateDateBar();
+  renderCurrentTab();
+}
+
+function goToday() {
+  activeDate = realToday();
+  document.getElementById('calPopup').style.display = 'none';
+  updateDateBar();
+  renderCurrentTab();
+}
+function updateDateBar() {
+  const rt = realToday();
+  const diff = dateDiffDays(rt, activeDate);
+  const display = document.getElementById('dateDisplay');
+  display.textContent = formatDateDisplay(activeDate);
+  display.className = 'date-display' + (diff > 0 ? ' future' : diff < 0 ? ' past' : '');
+
+  const banner = document.getElementById('notTodayBanner');
+  if(diff === 0) {
+    banner.style.display = 'none';
+  } else {
+    banner.style.display = 'block';
+    if(diff > 0) {
+      banner.className = 'not-today-banner future';
+      banner.textContent = `📅 ${activeDate} 계획 중 — 미래 날짜입니다. 오늘로 돌아가려면 날짜를 클릭하세요.`;
+    } else {
+      banner.className = 'not-today-banner past';
+      banner.textContent = `📋 ${activeDate} 기록 열람 중 — 과거 날짜입니다.`;
+    }
+  }
+}
+
+let activeTab = 'brain';
+const TABS=['brain','big3','backlog','timebox','review'];
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',TABS[i]===tab));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  renderCurrentTab();
+}
+function renderCurrentTab() {
+  if(activeTab==='brain')  { renderDump(); }
+  if(activeTab==='big3')   renderBig3();
+  if(activeTab==='backlog')renderBacklog(currentFilter);
+  if(activeTab==='timebox')renderTimeGrid();
+  if(activeTab==='review') renderReviews();
+}
+
+// BRAIN DUMP
+function processDump() {
+  const raw=document.getElementById('dumpInput').value.trim();if(!raw)return;
+  raw.split('\n').filter(l=>l.trim()).forEach(line=>state.dumpItems.push({id:uid(),text:line.trim(),priority:'mid',date:activeDate}));
+  save();renderDump();document.getElementById('dumpInput').value='';
+  document.getElementById('dumpList').style.display='block';
+}
+// Global map for safe dump item id access
+window._dumpMap = {};
+
+function renderDump() {
+  const show = state.dumpItems.filter(i=>(i.date||realToday())===activeDate);
+  document.getElementById('dumpCount').textContent=show.length;
+  const c=document.getElementById('dumpItems');
+  if(!show.length){
+    c.innerHTML=`<div style="padding:24px;text-align:center;color:var(--muted);font-family:'Space Mono',monospace;font-size:11px;border:1px dashed var(--border)">✓ 이 날짜에 분류된 항목이 없습니다</div>`;return;
+  }
+  window._dumpMap = {};
+  show.forEach((item, idx) => { window._dumpMap[idx] = item.id; });
+  c.innerHTML=show.map((item,idx)=>`
+    <div class="dump-item">
+      <div style="width:8px;height:8px;border-radius:50%;background:${item.priority==='high'?'var(--accent)':item.priority==='mid'?'var(--accent2)':'var(--muted)'};flex-shrink:0;margin-top:6px"></div>
+      <div style="flex:1">
+        <div class="dump-text">${escHtml(item.text)}</div>
+        <div class="dump-actions">
+          <select onchange="setPriority(window._dumpMap[${idx}],this.value)" style="font-size:9px;padding:4px 8px;width:auto;font-family:'Space Mono',monospace;letter-spacing:1px">
+            <option value="high" ${item.priority==='high'?'selected':''}>● HIGH</option>
+            <option value="mid"  ${item.priority==='mid' ?'selected':''}>● MID</option>
+            <option value="low"  ${item.priority==='low' ?'selected':''}>● LOW</option>
+          </select>
+          <button class="btn btn-xs btn-primary"   onclick="dumpToBig3(window._dumpMap[${idx}])">→ BIG 3</button>
+          <button class="btn btn-xs btn-secondary" onclick="dumpToBacklog(window._dumpMap[${idx}],'later')">→ 나중에</button>
+          <button class="btn btn-xs btn-secondary" onclick="dumpToBacklog(window._dumpMap[${idx}],'someday')">→ 언젠가</button>
+          <button class="btn btn-xs btn-danger"    onclick="removeItem(window._dumpMap[${idx}])">✕</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+function setPriority(id,val){const i=state.dumpItems.find(i=>i.id===id);if(i){i.priority=val;save();renderDump();}}
+function removeItem(id){state.dumpItems=state.dumpItems.filter(i=>i.id!==id);save();renderDump();}
+function dumpToBig3(id){
+  const item=state.dumpItems.find(i=>i.id===id);if(!item)return;
+  if(state.big3.filter(i=>i.date===activeDate).length>=3){alert('Big 3는 하루 최대 3개입니다!');return;}
+  state.big3.push({id:uid(),text:item.text,done:false,date:activeDate,subtasks:[]});
+  state.dumpItems=state.dumpItems.filter(i=>i.id!==id);save();renderDump();
+}
+function dumpToBacklog(id,category){
+  const item=state.dumpItems.find(i=>i.id===id);if(!item)return;
+  state.backlog.push({id:uid(),text:item.text,category,note:'',date:activeDate});
+  state.dumpItems=state.dumpItems.filter(i=>i.id!==id);save();renderDump();
+}
+function clearDump(){
+  if(confirm('이 날짜의 Brain Dump 항목을 모두 삭제하시겠습니까?')){
+    state.dumpItems=state.dumpItems.filter(i=>(i.date||realToday())!==activeDate);
+    save();renderDump();document.getElementById('dumpList').style.display='none';
+  }
+}
+
+// BIG 3
+function renderBig3(){
+  const items=state.big3.filter(i=>i.date===activeDate);
+  const c=document.getElementById('big3Container');
+  const isFuture = dateDiffDays(realToday(), activeDate) > 0;
+  if(!items.length){
+    c.innerHTML=`<div style="padding:40px;text-align:center;color:var(--muted);font-family:'Space Mono',monospace;font-size:12px;letter-spacing:2px;border:1px dashed var(--border)">${isFuture?'내일의':'이 날의'} Big 3를 미리 설정하세요<br><span style="font-size:10px;display:block;margin-top:8px">Brain Dump에서 분류하거나 직접 입력하세요</span></div>`;
+    updateStats([]);return;
+  }
+  c.innerHTML=items.map((item,i)=>{
+    const subs=item.subtasks||[];
+    const doneSubs=subs.filter(s=>s.done).length;
+    const pct=subs.length?Math.round(doneSubs/subs.length*100):(item.done?100:0);
+    const allDone=item.done||(subs.length>0&&doneSubs===subs.length);
+    return `<div class="big3-item ${allDone?'all-done':''}">
+      <div class="big3-top">
+        <div class="big3-num">${String(i+1).padStart(2,'0')}</div>
+        <div class="big3-content">
+          <div class="big3-label">TODAY'S PRIORITY ${i+1}</div>
+          <div class="big3-text">${escHtml(item.text)}</div>
+          ${subs.length===0?`<div class="subtask-hint">💡 첫 번째 물리적 행동은 무엇인가요?<br>동사로 시작하는 서브태스크로 쪼개세요<br><span style="color:var(--accent)">"촬영 장소 도착" → "카메라 세팅" → "10분 영상 녹화"</span></div>`:''}
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+          <div class="progress-text">${pct}% 완료${subs.length?` (${doneSubs}/${subs.length} 서브태스크)`:''}</div>
+          ${subs.length>0?`<div class="subtask-list">${subs.map(s=>`
+            <div class="subtask-item ${s.done?'done-item':''}" onclick="toggleSubtask('${item.id}','${s.id}')">
+              <div class="sub-check ${s.done?'done':''}"></div>
+              <span class="sub-text ${s.done?'done':''}">${escHtml(s.text)}</span>
+              <button class="btn btn-xs" style="background:transparent;border:none;color:var(--border);padding:4px 8px;font-size:14px;opacity:0;transition:opacity .15s" onmouseenter="this.style.opacity=1;this.style.color='var(--danger)'" onmouseleave="this.style.opacity=0" onclick="event.stopPropagation();removeSubtask('${item.id}','${s.id}')">✕</button>
+            </div>`).join('')}</div>`:''}
+          <div class="subtask-add">
+            <input type="text" id="si-${item.id}" placeholder="서브태스크 추가 (Enter로 저장)" onkeydown="if(event.key==='Enter')addSubtask('${item.id}')">
+            <button class="btn btn-xs btn-primary" onclick="addSubtask('${item.id}')">ADD</button>
+          </div>
+        </div>
+        <div class="big3-actions">
+          <div class="check-btn ${allDone?'checked':''}" onclick="toggleBig3('${item.id}')"></div>
+          <button class="btn btn-sm" style="background:var(--accent);color:#000;font-size:9px" onclick="startFocus('${escHtml(item.text)}')">▶ FOCUS</button>
+          <button class="btn btn-sm btn-secondary" style="font-size:9px;color:#6699aa;border-color:#6699aa44" onclick="big3ToBacklog('${item.id}')" title="Backlog으로 이동">→ BL</button>
+          <button class="btn btn-sm btn-danger" onclick="removeBig3('${item.id}')">✕</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  updateStats(items);
+}
+function updateStats(items){
+  const done=items.filter(i=>{const s=i.subtasks||[];return i.done||(s.length>0&&s.every(x=>x.done));}).length;
+  document.getElementById('s-done').textContent=done;
+  document.getElementById('s-rate').textContent=items.length?Math.round(done/items.length*100)+'%':'0%';
+  document.getElementById('s-streak').textContent=state.streak;
+}
+function addBig3(){
+  const input=document.getElementById('big3Input');const text=input.value.trim();if(!text)return;
+  if(state.big3.filter(i=>i.date===activeDate).length>=3){alert('Big 3는 하루 최대 3개입니다!');return;}
+  state.big3.push({id:uid(),text,done:false,date:activeDate,subtasks:[]});
+  input.value='';save();renderBig3();
+}
+function toggleBig3(id){
+  const item=state.big3.find(i=>i.id===id);if(!item)return;
+  item.done=!item.done;
+  if(item.done&&item.subtasks)item.subtasks.forEach(s=>s.done=true);
+  save();renderBig3();
+  const td=state.big3.filter(i=>i.date===activeDate);
+  if(activeDate===realToday()&&td.length>0&&td.every(i=>i.done||(i.subtasks&&i.subtasks.length>0&&i.subtasks.every(s=>s.done)))){
+    state.streak++;save();setTimeout(()=>alert('🎯 Big 3 완료! 스트릭 '+state.streak+'일!'),100);
+  }
+}
+function removeBig3(id){state.big3=state.big3.filter(i=>i.id!==id);save();renderBig3();}
+function big3ToBacklog(id){
+  const item=state.big3.find(i=>i.id===id);if(!item)return;
+  // Open a small modal to choose category
+  const choice=window._b3BacklogChoice=item.id;
+  document.getElementById('b3BacklogText').textContent=item.text;
+  document.getElementById('b3BacklogModal').classList.add('open');
+}
+function confirmBig3ToBacklog(category){
+  const id=window._b3BacklogChoice;
+  const item=state.big3.find(i=>i.id===id);if(!item)return;
+  state.backlog.push({id:uid(),text:item.text,category,note:'',date:activeDate});
+  state.big3=state.big3.filter(i=>i.id!==id);
+  window._b3BacklogChoice=null;
+  save();closeModal('b3BacklogModal');renderBig3();
+}
+function addSubtask(big3Id){
+  const input=document.getElementById('si-'+big3Id);const text=input.value.trim();if(!text)return;
+  const item=state.big3.find(i=>i.id===big3Id);if(!item)return;
+  if(!item.subtasks)item.subtasks=[];
+  item.subtasks.push({id:uid(),text,done:false});
+  input.value='';save();renderBig3();
+  setTimeout(()=>{const el=document.getElementById('si-'+big3Id);if(el)el.focus();},50);
+}
+function toggleSubtask(big3Id,subId){
+  const item=state.big3.find(i=>i.id===big3Id);if(!item||!item.subtasks)return;
+  const sub=item.subtasks.find(s=>s.id===subId);if(sub){sub.done=!sub.done;save();renderBig3();}
+}
+function removeSubtask(big3Id,subId){
+  const item=state.big3.find(i=>i.id===big3Id);if(!item)return;
+  item.subtasks=item.subtasks.filter(s=>s.id!==subId);save();renderBig3();
+}
+
+// BACKLOG
+let currentFilter='all';
+const CAT={later:{label:'나중에',color:'#6699aa'},someday:{label:'언젠가',color:'#aaa866'},idea:{label:'아이디어',color:'#bb8866'}};
+function renderBacklog(filter){
+  currentFilter=filter;
+  const items=filter==='all'?state.backlog:state.backlog.filter(i=>i.category===filter);
+  const c=document.getElementById('backlogList');
+  if(!items.length){
+    c.innerHTML=`<div style="padding:32px;text-align:center;color:var(--muted);font-family:'Space Mono',monospace;font-size:11px;border:1px dashed var(--border)">항목이 없습니다<br><span style="font-size:9px;display:block;margin-top:6px">Brain Dump에서 분류하거나 + ADD로 추가하세요</span></div>`;return;
+  }
+  c.innerHTML=items.map(item=>{
+    const cat=CAT[item.category]||{label:item.category,color:'var(--muted)'};
+    return `<div class="backlog-item">
+      <span class="cat-badge" style="color:${cat.color};border-color:${cat.color}66">${cat.label}</span>
+      <div style="flex:1">
+        <div style="font-size:14px;margin-bottom:${item.note?'4px':'0'}">${escHtml(item.text)}</div>
+        ${item.note?`<div style="font-size:12px;color:var(--muted)">${escHtml(item.note)}</div>`:''}
+      </div>
+      <button class="btn btn-xs btn-primary" onclick="backlogToBig3('${item.id}')" title="오늘 Big 3로 올리기">→ B3</button>
+      <button class="btn btn-xs btn-danger"  onclick="removeBacklog('${item.id}')">✕</button>
+    </div>`;
+  }).join('');
+}
+function filterBacklog(filter,btn){
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderBacklog(filter);
+}
+function backlogToBig3(id){
+  const item=state.backlog.find(i=>i.id===id);if(!item)return;
+  if(state.big3.filter(i=>i.date===activeDate).length>=3){alert('Big 3는 하루 최대 3개입니다!');return;}
+  state.big3.push({id:uid(),text:item.text,done:false,date:activeDate,subtasks:[]});
+  state.backlog=state.backlog.filter(i=>i.id!==id);
+  save();renderBacklog(currentFilter);
+  alert('Big 3에 추가됐습니다! Big 3 탭에서 서브태스크를 설정하세요.');
+}
+function removeBacklog(id){state.backlog=state.backlog.filter(i=>i.id!==id);save();renderBacklog(currentFilter);}
+function openAddBacklog(){document.getElementById('backlogModal').classList.add('open');}
+function saveBacklogItem(){
+  const text=document.getElementById('backlogTask').value.trim();if(!text)return;
+  state.backlog.push({id:uid(),text,category:document.getElementById('backlogCategory').value,note:document.getElementById('backlogNote').value.trim(),date:activeDate});
+  document.getElementById('backlogTask').value='';document.getElementById('backlogNote').value='';
+  save();closeModal('backlogModal');renderBacklog(currentFilter);
+}
+
+// TIME BOXING
+let editingBlockId = null;
+function initBlockModal(){
+  const sel=document.getElementById('blockHour');
+  for(let h=5;h<=23;h++)sel.innerHTML+=`<option value="${String(h).padStart(2,'0')}">${String(h).padStart(2,'0')}</option>`;
+}
+function openAddBlock(){
+  editingBlockId = null;
+  document.getElementById('blockModalTitle').textContent = 'TIME BLOCK';
+  document.getElementById('blockSaveBtn').textContent = '저장';
+  document.getElementById('blockTask').value = '';
+  // reset hour/min to current time
+  const now = new Date();
+  const h = document.getElementById('blockHour');
+  const m = document.getElementById('blockMin');
+  const curH = String(now.getHours()).padStart(2,'0');
+  for(let i=0;i<h.options.length;i++) if(h.options[i].value===curH){h.selectedIndex=i;break;}
+  m.value = '00';
+  document.getElementById('blockModal').classList.add('open');
+  switchImportTab('big3');
+}
+
+function openEditBlock(id) {
+  const b = state.blocks.find(b=>b.id===id); if(!b) return;
+  editingBlockId = id;
+  document.getElementById('blockModalTitle').textContent = 'EDIT BLOCK';
+  document.getElementById('blockSaveBtn').textContent = '수정 완료';
+  // hide import tabs section
+  document.getElementById('importTabsSection').style.display = 'none';
+  document.getElementById('importDivider').style.display = 'none';
+  // fill fields
+  const h = document.getElementById('blockHour');
+  const hVal = b.time.split(':')[0];
+  for(let i=0;i<h.options.length;i++) if(h.options[i].value===hVal){h.selectedIndex=i;break;}
+  document.getElementById('blockMin').value = b.time.split(':')[1];
+  document.getElementById('blockTask').value = b.task;
+  document.getElementById('blockType').value = b.type;
+  document.getElementById('blockDuration').value = b.duration;
+  document.getElementById('blockModal').classList.add('open');
+}
+function switchImportTab(tab){
+  ['big3','backlog','dump'].forEach(t=>{
+    document.getElementById('itab-'+t).classList.toggle('active',t===tab);
+    document.getElementById('ilist-'+t).style.display=t===tab?'block':'none';
+  });
+  if(tab==='big3')   renderIBig3();
+  if(tab==='backlog')renderIBacklog();
+  if(tab==='dump')   renderIDump();
+}
+function iRow(text,type){
+  const safe=text.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  return `<div onclick="importTask('${safe}','${type}')" style="display:flex;align-items:center;gap:10px;padding:9px 14px;border:1px solid var(--border);margin-bottom:5px;cursor:pointer;background:var(--surface2)" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+    <span style="flex:1;font-size:13px">${escHtml(text)}</span>
+    <span style="font-size:9px;color:var(--accent);border:1px solid var(--accent);padding:2px 6px">+ IMPORT</span>
+  </div>`;
+}
+function emptyI(msg){return `<div style="padding:12px;font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);border:1px dashed var(--border);text-align:center">${msg}</div>`;}
+function renderIBig3(){
+  const items=state.big3.filter(i=>i.date===activeDate);
   document.getElementById('ilist-big3').innerHTML=items.length?`<div style="max-height:160px;overflow-y:auto">${items.map((it,idx)=>iRow(`${idx+1}. ${it.text}`,'deep')).join('')}</div>`:emptyI('이 날의 Big 3가 없습니다');
 }
 function renderIBacklog(){
