@@ -473,6 +473,30 @@
   .step-type-badge.free{background:rgba(182,123,255,.15);color:var(--purple);}
   .step-type-badge.timed{background:rgba(232,255,0,.12);color:var(--accent);}
 
+
+  /* ── PROJECT TASKS ── */
+  .proj-task-list{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+  .proj-task-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;cursor:pointer;user-select:none;}
+  .proj-task-header-left{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:8px;}
+  .proj-task-toggle{font-size:10px;color:var(--text3);transition:transform .2s;}
+  .proj-task-toggle.open{transform:rotate(90deg);}
+  .proj-task-item{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--border);}
+  .proj-task-item:last-child{border-bottom:none;}
+  .proj-task-check{width:18px;height:18px;border:1.5px solid var(--border2);border-radius:4px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+  .proj-task-check.done{background:var(--green);border-color:var(--green);}
+  .proj-task-check.done::after{content:'✓';font-size:11px;font-weight:800;color:#000;}
+  .proj-task-text{flex:1;font-size:13px;line-height:1.4;}
+  .proj-task-text.done{text-decoration:line-through;color:var(--text3);}
+  .proj-task-linked{font-size:10px;color:var(--accent);background:rgba(232,255,0,.1);padding:1px 6px;border-radius:8px;flex-shrink:0;}
+
+  /* task editor in modal */
+  .task-editor-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
+  .task-editor-row input{flex:1;font-size:13px;padding:7px 12px;}
+
+  /* Big3 task select */
+  .proj-task-select{font-size:12px;padding:6px 12px;color:var(--text3);width:100%;margin-top:6px;display:none;}
+  .proj-task-select.visible{display:block;}
+
 </style>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -576,8 +600,12 @@
       <input type="text" id="projGoal" placeholder="예: 3PL 연동 완료 후 월 100만원 달성">
     </div>
     <div class="form-row">
-      <label class="form-label">Next Action</label>
-      <input type="text" id="projNext" placeholder="당장 할 수 있는 가장 작은 행동">
+      <label class="form-label" style="display:flex;align-items:center;justify-content:space-between">
+        태스크 목록
+        <button class="btn btn-xs btn-secondary" onclick="addProjTaskRow()" type="button">+ 추가</button>
+      </label>
+      <div id="projTaskEditor" style="margin-top:4px"></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px">완료된 태스크 수로 진행률 자동 계산</div>
     </div>
     <div class="form-row">
       <label class="form-label">마감일 (선택)</label>
@@ -650,11 +678,14 @@
       <button class="btn btn-primary" onclick="addBig3()">ADD</button>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px">
-      <select id="big3ProjectSelect" style="font-size:12px;padding:6px 12px;color:var(--text3);width:auto">
+      <select id="big3ProjectSelect" style="font-size:12px;padding:6px 12px;color:var(--text3);width:auto" onchange="onBig3ProjectChange()">
         <option value="">프로젝트 연결 안 함</option>
       </select>
       <button class="btn btn-xs btn-secondary" id="intentToggleBtn" onclick="toggleIntentInputs()" type="button">⏰ 언제/어디서?</button>
     </div>
+    <select id="big3TaskSelect" class="proj-task-select" onchange="onBig3TaskSelect()">
+      <option value="">태스크 직접 입력</option>
+    </select>
     <div class="intent-inputs" id="intentInputs">
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <select id="intentWhen" style="flex:1;min-width:120px;font-size:12px;padding:7px 12px">
@@ -857,7 +888,18 @@
         <select id="blockMin" style="flex:1"><option value="00">00</option><option value="30">30</option></select>
       </div>
     </div>
-    <div class="form-row"><label class="form-label">내용</label><input type="text" id="blockTask" placeholder="무엇을 할 것인가?"></div>
+    <div class="form-row">
+      <label class="form-label" style="display:flex;align-items:center;justify-content:space-between">
+        내용
+        <select id="blockProjSelect" style="font-size:11px;padding:4px 8px;width:auto;color:var(--text3)" onchange="onBlockProjChange()">
+          <option value="">프로젝트 태스크 선택</option>
+        </select>
+      </label>
+      <select id="blockTaskSelect" class="proj-task-select" style="margin-bottom:6px" onchange="onBlockTaskSelect()">
+        <option value="">태스크 직접 입력</option>
+      </select>
+      <input type="text" id="blockTask" placeholder="무엇을 할 것인가?">
+    </div>
     <div class="form-row"><label class="form-label">유형</label><select id="blockType"></select></div>
     <div class="form-row"><label class="form-label">소요 시간</label>
       <select id="blockDuration">
@@ -1450,7 +1492,8 @@ function addBig3(){
   const projId=document.getElementById('big3ProjectSelect').value||'';
   const intentWhen=document.getElementById('intentWhen')?.value||'';
   const intentWhere=document.getElementById('intentWhere')?.value.trim()||'';
-  const newItem={id:uid(),text,done:false,date:activeDate,subtasks:[],projectId:projId,intentWhen,intentWhere};
+  const linkedTaskId=document.getElementById('big3TaskSelect')?.value||'';
+  const newItem={id:uid(),text,done:false,date:activeDate,subtasks:[],projectId:projId,intentWhen,intentWhere,linkedTaskId};
   state.big3.push(newItem);
   // Auto-create timebox block if intentWhen is set
   if(intentWhen){
@@ -1475,6 +1518,8 @@ function addBig3(){
   // Close intent inputs after adding
   const ii=document.getElementById('intentInputs');if(ii)ii.classList.remove('open');
   const ib=document.getElementById('intentToggleBtn');if(ib)ib.textContent='⏰ 언제/어디서?';
+  const bts=document.getElementById('big3TaskSelect');if(bts){bts.value='';bts.classList.remove('visible');}
+  document.getElementById('big3ProjectSelect').value='';
   input.value='';save();renderBig3();
 }
 function toggleBig3(id){
@@ -1482,9 +1527,16 @@ function toggleBig3(id){
   const wasNotDone=!item.done;
   item.done=!item.done;
   if(item.done&&item.subtasks)item.subtasks.forEach(s=>s.done=true);
+  // Sync linked project task
+  if(item.linkedTaskId && item.projectId){
+    const p=state.projects.find(x=>x.id===item.projectId);
+    if(p){
+      const t=(p.tasks||[]).find(x=>x.id===item.linkedTaskId);
+      if(t){t.done=item.done; p.progress=calcProjectProgress(p);}
+    }
+  }
   save();renderBig3();
   if(wasNotDone){triggerCompletionBurst();}
-  // Update project progress after toggling
   updateProjectProgress(item.projectId);
   const td=state.big3.filter(i=>i.date===activeDate);
   if(activeDate===realToday()&&td.length>0&&td.every(i=>i.done||(i.subtasks&&i.subtasks.length>0&&i.subtasks.every(s=>s.done)))){
@@ -1761,7 +1813,9 @@ function saveBlock(){
     if(b){b.task=task;b.time=time;b.type=type;b.duration=duration;}
     editingBlockId=null;
   } else {
-    state.blocks.push({id:uid(),time,task,type,duration,done:false,date:activeDate});
+    const bProjId=document.getElementById('blockProjSelect')?.value||'';
+    const bTaskId=document.getElementById('blockTaskSelect')?.value||'';
+    state.blocks.push({id:uid(),time,task,type,duration,done:false,date:activeDate,linkedTaskId:bTaskId,projectId:bProjId});
   }
   document.getElementById('blockTask').value='';
   document.getElementById('importTabsSection').style.display='flex';
@@ -1791,7 +1845,16 @@ function renderTimeGrid(){
   const tot=Object.values(tc).reduce((a,b)=>a+b,0)||1;
   document.getElementById('progressStats').innerHTML=Object.entries(tc).map(([t,m])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="text-transform:uppercase">${t}</span><span>${m}분 (${Math.round(m/tot*100)}%)</span></div>`).join('');
 }
-function toggleBlock(id){const b=state.blocks.find(b=>b.id===id);if(b){b.done=!b.done;save();renderTimeGrid();}}
+function toggleBlock(id){
+  const b=state.blocks.find(x=>x.id===id);if(!b)return;
+  b.done=!b.done;
+  if(b.linkedTaskId&&b.projectId){
+    const p=state.projects.find(x=>x.id===b.projectId);
+    if(p){const t=(p.tasks||[]).find(x=>x.id===b.linkedTaskId);if(t){t.done=b.done;p.progress=calcProjectProgress(p);}}
+  }
+  save();renderTimeGrid();
+  if(activeTab==='projects')renderProjects();
+}
 function removeBlock(id){state.blocks=state.blocks.filter(b=>b.id!==id);save();renderTimeGrid();}
 
 // TYPE GUIDE
@@ -1916,7 +1979,7 @@ function renderReviews(){
             <span style="font-size:12px;font-weight:700;color:${p.color}">${pct}%</span>
           </div>
           <div class="proj-progress-track"><div class="proj-progress-fill" style="width:${pct}%;background:${p.color}"></div></div>
-          ${p.nextAction?`<div style="font-size:11px;color:var(--text3);margin-top:4px">Next: ${escHtml(p.nextAction)}</div>`:''}
+          ${(p.tasks||[]).filter(t=>!t.done).slice(0,1).map(t=>`<div style="font-size:11px;color:var(--text3);margin-top:4px">Next: ${escHtml(t.text)}</div>`).join('')}
         </div>`;
       }).join('');
     }
@@ -2019,7 +2082,28 @@ function renderProjects(){
             <button class="btn btn-xs" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border)" onclick="event.stopPropagation();adjustProgress('${p.id}',10)">+10%</button>
           </div>
         </div>
-        ${p.nextAction?`<div class="proj-next"><span class="proj-next-label">NEXT →</span><span>${escHtml(p.nextAction)}</span></div>`:''}
+        ${(()=>{
+          const tasks=p.tasks||[];
+          if(!tasks.length) return '';
+          const done=tasks.filter(t=>t.done).length;
+          const nextTasks=tasks.filter(t=>!t.done).slice(0,3);
+          return `<div class="proj-task-list">
+            <div class="proj-task-header" onclick="event.stopPropagation();toggleProjTaskList('${p.id}')">
+              <div class="proj-task-header-left">
+                태스크 <span style="background:${p.color};color:#000;padding:1px 7px;border-radius:8px;font-size:10px">${done}/${tasks.length}</span>
+              </div>
+              <span class="proj-task-toggle" id="tasktoggle-${p.id}">▶</span>
+            </div>
+            <div id="tasklist-${p.id}" style="display:none">
+              ${tasks.map(t=>`
+                <div class="proj-task-item">
+                  <div class="proj-task-check ${t.done?'done':''}" onclick="event.stopPropagation();toggleProjectTask('${p.id}','${t.id}')"></div>
+                  <span class="proj-task-text ${t.done?'done':''}">${escHtml(t.text)}</span>
+                  ${t.linkedCount?`<span class="proj-task-linked">Big3 연동</span>`:''}
+                </div>`).join('')}
+            </div>
+          </div>`;
+        })()}
         ${msHtml}
       </div>
     </div>`;
@@ -2068,9 +2152,11 @@ function openEditProject(id){
   selectedProjColor=p.color||'#E8FF00';
   document.getElementById('projName').value=p.name||'';
   document.getElementById('projGoal').value=p.goal||'';
-  document.getElementById('projNext').value=p.nextAction||'';
   document.getElementById('projDeadline').value=p.deadline||'';
   document.getElementById('projLoss').value=p.loss||'';
+  // Load tasks into editor
+  const taskEd=document.getElementById('projTaskEditor');
+  if(taskEd){taskEd.innerHTML='';(p.tasks||[]).forEach(t=>addProjTaskRow(t.text));}
   // Load milestones into editor
   const ed=document.getElementById('milestoneEditor');
   if(ed){ed.innerHTML='';(p.milestones||[]).forEach(m=>addMilestoneRow(m.name,m.date,m.loss,m.done));}
@@ -2090,20 +2176,22 @@ function selectProjColor(el){
 function saveProject(){
   const name=document.getElementById('projName').value.trim();if(!name)return;
   const goal=document.getElementById('projGoal').value.trim();
-  const nextAction=document.getElementById('projNext').value.trim();
   const deadline=document.getElementById('projDeadline').value||'';
   const loss=document.getElementById('projLoss').value.trim();
-  const newMilestones=getMilestoneEditorData();
+  const newTaskTexts=getProjTaskEditorData();
   if(editingProjectId){
     const p=state.projects.find(x=>x.id===editingProjectId);if(!p)return;
-    // Merge milestones: keep existing done states, add new ones
-    const existingDone=(p.milestones||[]).reduce((acc,m)=>{acc[m.name]=m.done;return acc;},{});
-    const merged=newMilestones.map(m=>({...m,done:existingDone[m.name]||false}));
-    Object.assign(p,{name,goal,nextAction,deadline,loss,color:selectedProjColor,milestones:merged});
-    // Recalc progress from milestones
-    if(merged.length>0)p.progress=Math.round(merged.filter(m=>m.done).length/merged.length*100);
+    // Merge tasks: keep done state for existing tasks by text match
+    const existingDone=(p.tasks||[]).reduce((acc,t)=>{acc[t.text]=t.done;return acc;},{});
+    const mergedTasks=newTaskTexts.map(t=>({...t,done:existingDone[t.text]||false}));
+    // Merge milestones
+    const newMilestones=getMilestoneEditorData();
+    const existingMsDone=(p.milestones||[]).reduce((acc,m)=>{acc[m.name]=m.done;return acc;},{});
+    const merged=newMilestones.map(m=>({...m,done:existingMsDone[m.name]||false}));
+    Object.assign(p,{name,goal,deadline,loss,color:selectedProjColor,tasks:mergedTasks,milestones:merged});
+    p.progress=calcProjectProgress(p);
   } else {
-    state.projects.push({id:uid(),name,goal,nextAction,deadline,loss,color:selectedProjColor,progress:0,milestones:newMilestones});
+    state.projects.push({id:uid(),name,goal,deadline,loss,color:selectedProjColor,progress:0,tasks:newTaskTexts,milestones:[]});
   }
   save();closeModal('projectModal');renderProjects();populateProjectSelects();updateDeadlineAlertBar();
 }
@@ -2117,8 +2205,10 @@ function populateProjectSelects(){
   const opts=`<option value="">연결 안 함</option>`+state.projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
   const b3=document.getElementById('big3ProjectSelect');
   const bl=document.getElementById('backlogProject');
+  const bp=document.getElementById('blockProjSelect');
   if(b3)b3.innerHTML=opts.replace('연결 안 함','프로젝트 연결 안 함');
   if(bl)bl.innerHTML=opts;
+  if(bp)bp.innerHTML='<option value="">프로젝트 태스크 선택</option>'+state.projects.filter(p=>(p.tasks||[]).some(t=>!t.done)).map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
 }
 
 
@@ -2564,6 +2654,105 @@ function closeRoutinePlayer() {
   rpState = null;
   document.getElementById('routinePlayer').classList.remove('open');
   if (activeTab === 'routine') renderRoutineList();
+}
+
+
+// ===== PROJECT TASKS =====
+function addProjTaskRow(text='') {
+  const ed = document.getElementById('projTaskEditor'); if (!ed) return;
+  const row = document.createElement('div');
+  row.className = 'task-editor-row';
+  row.innerHTML = `
+    <input type="text" placeholder="태스크 입력 (Enter로 추가)" value="${escHtml(text)}"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();addProjTaskRow();const rows=document.querySelectorAll('#projTaskEditor .task-editor-row input');rows[rows.length-1].focus();}">
+    <button class="btn btn-xs btn-danger" onclick="this.parentElement.remove()" type="button">✕</button>
+  `;
+  ed.appendChild(row);
+  row.querySelector('input').focus();
+}
+
+function getProjTaskEditorData() {
+  return Array.from(document.querySelectorAll('#projTaskEditor .task-editor-row input'))
+    .map(i => i.value.trim()).filter(Boolean)
+    .map(text => ({ id: uid(), text, done: false }));
+}
+
+function calcProjectProgress(p) {
+  const tasks = p.tasks || [];
+  if (!tasks.length) return p.progress || 0;
+  return Math.round(tasks.filter(t => t.done).length / tasks.length * 100);
+}
+
+function toggleProjectTask(projId, taskId) {
+  const p = state.projects.find(x => x.id === projId); if (!p) return;
+  const t = (p.tasks||[]).find(x => x.id === taskId); if (!t) return;
+  t.done = !t.done;
+  // sync: if any Big3/block was linked to this task, mark them too
+  state.big3.forEach(b => { if (b.linkedTaskId === taskId) b.done = t.done; });
+  state.blocks.forEach(b => { if (b.linkedTaskId === taskId) b.done = t.done; });
+  p.progress = calcProjectProgress(p);
+  if (t.done) triggerCompletionBurst();
+  save(); renderProjects();
+  if (activeTab === 'big3') renderBig3();
+}
+
+// Returns tasks of a project as <option> elements, excluding done
+function projTaskOptions(projId, selectedTaskId='') {
+  const p = state.projects.find(x => x.id === projId); if (!p) return '';
+  return (p.tasks||[]).filter(t => !t.done).map(t =>
+    `<option value="${t.id}" ${t.id===selectedTaskId?'selected':''}>${escHtml(t.text)}</option>`
+  ).join('');
+}
+
+// Big3 project change → populate task select
+function onBig3ProjectChange() {
+  const projId = document.getElementById('big3ProjectSelect').value;
+  const taskSel = document.getElementById('big3TaskSelect');
+  if (!projId) { taskSel.classList.remove('visible'); return; }
+  const opts = projTaskOptions(projId);
+  if (!opts) { taskSel.classList.remove('visible'); return; }
+  taskSel.innerHTML = '<option value="">태스크 직접 입력</option>' + opts;
+  taskSel.classList.add('visible');
+}
+
+// Big3 task select → fill text input
+function onBig3TaskSelect() {
+  const taskId = document.getElementById('big3TaskSelect').value;
+  if (!taskId) return;
+  const projId = document.getElementById('big3ProjectSelect').value;
+  const p = state.projects.find(x => x.id === projId); if (!p) return;
+  const t = (p.tasks||[]).find(x => x.id === taskId); if (!t) return;
+  document.getElementById('big3Input').value = t.text;
+}
+
+// Block modal project → populate task select
+function onBlockProjChange() {
+  const projId = document.getElementById('blockProjSelect').value;
+  const taskSel = document.getElementById('blockTaskSelect');
+  if (!projId) { taskSel.classList.remove('visible'); return; }
+  const opts = projTaskOptions(projId);
+  if (!opts) { taskSel.classList.remove('visible'); return; }
+  taskSel.innerHTML = '<option value="">태스크 직접 입력</option>' + opts;
+  taskSel.classList.add('visible');
+}
+
+function onBlockTaskSelect() {
+  const taskId = document.getElementById('blockTaskSelect').value;
+  if (!taskId) return;
+  const projId = document.getElementById('blockProjSelect').value;
+  const p = state.projects.find(x => x.id === projId); if (!p) return;
+  const t = (p.tasks||[]).find(x => x.id === taskId); if (!t) return;
+  document.getElementById('blockTask').value = t.text;
+}
+
+
+function toggleProjTaskList(projId) {
+  const list = document.getElementById('tasklist-' + projId);
+  const arrow = document.getElementById('tasktoggle-' + projId);
+  if (!list) return;
+  const isOpen = list.style.display !== 'none';
+  list.style.display = isOpen ? 'none' : 'block';
+  if (arrow) arrow.classList.toggle('open', !isOpen);
 }
 
 // INIT — wrapped so Firebase can call after load
