@@ -2802,6 +2802,12 @@ function initApp() {
   renderVision();
   updateDeadlineAlertBar();
   updateDateBar();
+  // 모달 오버레이 클릭 시 닫기
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', function(e) {
+      if (e.target === this) closeModal(this.id);
+    });
+  });
   if(state.dumpItems.filter(i=>(i.date||realToday())===activeDate).length>0){
     document.getElementById('dumpList').style.display='block';
   }
