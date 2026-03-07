@@ -232,11 +232,12 @@
       min-width: 0;
     }
     .tab.active::after { left: 25%; right: 25%; }
-    .tab[onclick*="brain"]::before  { content: '🧠'; font-size: 18px; }
-    .tab[onclick*="big3"]::before   { content: '🎯'; font-size: 18px; }
-    .tab[onclick*="backlog"]::before{ content: '📋'; font-size: 18px; }
-    .tab[onclick*="timebox"]::before{ content: '⏱'; font-size: 18px; }
-    .tab[onclick*="review"]::before { content: '📝'; font-size: 18px; }
+    .tab[onclick*="projects"]::before{ content: '🗂'; font-size: 16px; }
+    .tab[onclick*="brain"]::before  { content: '🧠'; font-size: 16px; }
+    .tab[onclick*="big3"]::before   { content: '🎯'; font-size: 16px; }
+    .tab[onclick*="backlog"]::before{ content: '📋'; font-size: 16px; }
+    .tab[onclick*="timebox"]::before{ content: '⏱'; font-size: 16px; }
+    .tab[onclick*="review"]::before { content: '📝'; font-size: 16px; }
     nav > div:last-child { display: none; }
     #syncStatus { display: none !important; }
     #syncBadge { display: block !important; }
@@ -306,6 +307,43 @@
     .tab { font-size: 9px; padding: 7px 2px 9px; }
     .date-display { font-size: 11px; }
   }
+
+  /* COLOR SWATCH */
+  .color-swatch{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .15s,border-color .15s;}
+  .color-swatch:hover{transform:scale(1.15);}
+  .color-swatch.active{border-color:var(--text);transform:scale(1.1);}
+
+  /* PROJECT CARD */
+  .proj-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;margin-bottom:14px;transition:border-color .2s;position:relative;overflow:hidden;}
+  .proj-card:hover{border-color:var(--border2);}
+  .proj-accent-bar{position:absolute;top:0;left:0;width:4px;height:100%;border-radius:var(--radius) 0 0 var(--radius);}
+  .proj-name{font-size:17px;font-weight:700;letter-spacing:-.4px;margin-bottom:4px;}
+  .proj-goal{font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.5;}
+  .proj-progress-track{height:4px;background:var(--surface3);border-radius:2px;margin-bottom:6px;overflow:hidden;}
+  .proj-progress-fill{height:100%;border-radius:2px;transition:width .6s cubic-bezier(.34,1.56,.64,1);}
+  .proj-meta{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--text3);font-weight:500;margin-bottom:14px;}
+  .proj-next{background:var(--surface2);border-radius:var(--radius-xs);padding:10px 14px;font-size:13px;color:var(--text2);display:flex;align-items:center;gap:10px;}
+  .proj-next-label{font-size:10px;font-weight:700;color:var(--text3);margin-right:4px;flex-shrink:0;}
+
+  /* COMPLETION ANIMATION */
+  @keyframes checkPop{0%{transform:scale(1)}40%{transform:scale(1.4)}70%{transform:scale(.9)}100%{transform:scale(1)}}
+  @keyframes confetti{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-40px) scale(.5)}}
+  .check-done-anim{animation:checkPop .35s cubic-bezier(.34,1.56,.64,1);}
+  .completion-burst{position:absolute;pointer-events:none;z-index:999;}
+  .burst-dot{position:absolute;width:6px;height:6px;border-radius:50%;animation:confetti .5s ease-out forwards;}
+
+  /* PROJECT BADGE on Big3 */
+  .proj-badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-bottom:6px;}
+
+  /* REVIEW SUMMARY CARD */
+  .review-stat-row{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+  .review-stat-box{flex:1;min-width:100px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;text-align:center;}
+  .review-stat-num{font-size:36px;font-weight:800;letter-spacing:-1px;line-height:1;}
+  .review-stat-label{font-size:11px;color:var(--text3);font-weight:500;margin-top:4px;}
+
+  /* VISION BAR */
+  #visionBar .vision-empty{color:var(--text3);font-style:italic;}
+
 </style>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -321,11 +359,12 @@
 </div>
 
 <nav>
-  <div class="tab active" onclick="switchTab('brain')">01 Brain Dump</div>
-  <div class="tab" onclick="switchTab('big3')">02 Big 3</div>
-  <div class="tab" onclick="switchTab('backlog')">03 Backlog</div>
-  <div class="tab" onclick="switchTab('timebox')">04 Time Boxing</div>
-  <div class="tab" onclick="switchTab('review')">05 Review</div>
+  <div class="tab" onclick="switchTab('projects')">프로젝트</div>
+  <div class="tab active" onclick="switchTab('brain')">Brain Dump</div>
+  <div class="tab" onclick="switchTab('big3')">Big 3</div>
+  <div class="tab" onclick="switchTab('backlog')">Backlog</div>
+  <div class="tab" onclick="switchTab('timebox')">Time Boxing</div>
+  <div class="tab" onclick="switchTab('review')">Review</div>
   <div style="display:flex;align-items:center;gap:16px;margin-left:auto;padding:0 20px">
     <span id="syncStatus" style="font-size:11px;font-weight:500;color:var(--text3)">연결 중...</span>
     <div class="logo">EXEC<span>//</span>SYS</div>
@@ -363,6 +402,74 @@
 </div>
 <div class="not-today-banner" id="notTodayBanner"></div>
 
+<!-- VISION BAR -->
+<div id="visionBar" style="display:none;background:var(--surface);border-bottom:1px solid var(--border);padding:10px 40px;cursor:pointer" onclick="openVisionEdit()">
+  <span id="visionText" style="font-size:13px;font-weight:600;color:var(--text2)"></span>
+  <span style="font-size:11px;color:var(--text3);margin-left:8px">✎</span>
+</div>
+
+<!-- 00 PROJECTS -->
+<div class="page" id="page-projects">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:12px">
+    <div>
+      <div class="page-title">프로젝트</div>
+      <div class="page-sub">지금 집중하고 있는 것들 — 좁고 깊게</div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="openAddProject()">+ 프로젝트</button>
+  </div>
+  <div id="projectsContainer"></div>
+</div>
+
+<!-- VISION EDIT MODAL -->
+<div class="modal-overlay" id="visionModal">
+  <div class="modal" style="max-width:480px">
+    <h2>비전 한 줄</h2>
+    <p style="font-size:13px;color:var(--text3);margin-bottom:20px">나를 움직이게 하는 단 하나의 문장</p>
+    <div class="form-row">
+      <input type="text" id="visionInput" placeholder="예: 세상에 내 이야기를 던진다" maxlength="60">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveVision()">저장</button>
+      <button class="btn btn-secondary" onclick="closeModal('visionModal')">취소</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECT ADD/EDIT MODAL -->
+<div class="modal-overlay" id="projectModal">
+  <div class="modal" style="max-width:520px">
+    <h2 id="projectModalTitle">새 프로젝트</h2>
+    <div class="form-row">
+      <label class="form-label">프로젝트 이름</label>
+      <input type="text" id="projName" placeholder="예: 쇼핑몰 리뉴얼">
+    </div>
+    <div class="form-row">
+      <label class="form-label">목표 한 줄</label>
+      <input type="text" id="projGoal" placeholder="예: 3PL 연동 완료 후 월 100만원 달성">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Next Action</label>
+      <input type="text" id="projNext" placeholder="당장 할 수 있는 가장 작은 행동">
+    </div>
+    <div class="form-row">
+      <label class="form-label">색상</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="projColorPicker">
+        <div class="color-swatch active" data-color="#E8FF00" style="background:#E8FF00" onclick="selectProjColor(this)"></div>
+        <div class="color-swatch" data-color="#3DDC84" style="background:#3DDC84" onclick="selectProjColor(this)"></div>
+        <div class="color-swatch" data-color="#4C9EFF" style="background:#4C9EFF" onclick="selectProjColor(this)"></div>
+        <div class="color-swatch" data-color="#FF8C42" style="background:#FF8C42" onclick="selectProjColor(this)"></div>
+        <div class="color-swatch" data-color="#B67BFF" style="background:#B67BFF" onclick="selectProjColor(this)"></div>
+        <div class="color-swatch" data-color="#FF5A5A" style="background:#FF5A5A" onclick="selectProjColor(this)"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveProject()">저장</button>
+      <button class="btn btn-secondary" onclick="closeModal('projectModal')">취소</button>
+      <button class="btn btn-danger btn-sm" id="projDeleteBtn" style="display:none;margin-left:auto" onclick="deleteProject()">삭제</button>
+    </div>
+  </div>
+</div>
+
 <!-- 01 BRAIN DUMP -->
 <div class="page active" id="page-brain">
   <div class="page-title">Brain Dump</div>
@@ -395,10 +502,13 @@
   <div id="big3Container"></div>
   <div class="card">
     <h3>새 목표 추가</h3>
-    <div style="display:flex;gap:12px">
-      <input type="text" id="big3Input" placeholder="오늘의 핵심 목표 (뭉뚱그려도 됨 — 아래서 쪼개세요)" style="flex:1">
+    <div style="display:flex;gap:12px;margin-bottom:10px">
+      <input type="text" id="big3Input" placeholder="오늘의 핵심 목표 (뭉뚱그려도 됨 — 아래서 쪼개세요)" style="flex:1" onkeydown="if(event.key==='Enter')addBig3()">
       <button class="btn btn-primary" onclick="addBig3()">ADD</button>
     </div>
+    <select id="big3ProjectSelect" style="width:auto;font-size:12px;padding:6px 12px;color:var(--text3)">
+      <option value="">프로젝트 연결 안 함</option>
+    </select>
   </div>
   <hr class="divider">
   <div class="grid3">
@@ -418,6 +528,7 @@
       <button class="filter-btn" onclick="filterBacklog('later',this)">나중에</button>
       <button class="filter-btn" onclick="filterBacklog('someday',this)">언젠가</button>
       <button class="filter-btn" onclick="filterBacklog('idea',this)">아이디어</button>
+      <button class="filter-btn" onclick="filterBacklog('waiting',this)">⏳ 대기 중</button>
     </div>
     <button class="btn btn-sm btn-primary" onclick="openAddBacklog()">+ ADD</button>
   </div>
@@ -456,14 +567,24 @@
 
 <!-- 05 REVIEW -->
 <div class="page" id="page-review">
-  <div class="page-title">Daily Review</div>
-  <div class="page-sub">반성 없이 성장 없다 — 매일 밤 5분의 의식</div>
+  <div class="page-title">오늘의 요약</div>
+  <div class="page-sub">하루를 닫는 5분 — 완료한 것들과 내일로 이어지는 것</div>
+
+  <!-- 오늘 완료 요약 -->
+  <div id="reviewSummary" style="margin-bottom:24px"></div>
+
+  <!-- 프로젝트 진행률 -->
+  <div class="card" style="margin-bottom:20px">
+    <h3>프로젝트 현황</h3>
+    <div id="reviewProjectProgress"></div>
+  </div>
+
   <div class="grid2">
     <div>
-      <div class="card"><h3>오늘의 WIN</h3><textarea style="min-height:100px" id="reviewWin" placeholder="오늘 잘한 것, 달성한 것..."></textarea></div>
-      <div class="card"><h3>오늘의 MISS</h3><textarea style="min-height:100px" id="reviewMiss" placeholder="놓친 것, 더 잘할 수 있었던 것..."></textarea></div>
-      <div class="card"><h3>내일의 1가지 변화</h3><textarea style="min-height:80px" id="reviewImprove" placeholder="내일 딱 하나만 바꾼다면?"></textarea></div>
-      <button class="btn btn-primary" style="width:100%" onclick="saveReview()">리뷰 저장</button>
+      <div class="card"><h3>오늘의 WIN</h3><textarea style="min-height:90px" id="reviewWin" placeholder="오늘 잘한 것, 달성한 것..."></textarea></div>
+      <div class="card"><h3>오늘의 MISS</h3><textarea style="min-height:90px" id="reviewMiss" placeholder="놓친 것, 더 잘할 수 있었던 것..."></textarea></div>
+      <div class="card"><h3>내일의 1가지 변화</h3><textarea style="min-height:70px" id="reviewImprove" placeholder="내일 딱 하나만 바꾼다면?"></textarea></div>
+      <button class="btn btn-primary" style="width:100%" onclick="saveReview()">저장</button>
     </div>
     <div><h3>이전 리뷰</h3><div id="reviewHistory" style="max-height:520px;overflow-y:auto"></div></div>
   </div>
@@ -509,13 +630,24 @@
 <!-- BACKLOG MODAL -->
 <div class="modal-overlay" id="backlogModal">
   <div class="modal">
-    <h2>BACKLOG 추가</h2>
+    <h2>Backlog 추가</h2>
     <div class="form-row"><label class="form-label">내용</label><input type="text" id="backlogTask" placeholder="할 일, 아이디어..."></div>
     <div class="form-row"><label class="form-label">분류</label>
-      <select id="backlogCategory">
+      <select id="backlogCategory" onchange="onBacklogCategoryChange(this)">
         <option value="later">나중에 — 곧 할 것, 구체적 계획은 없지만</option>
         <option value="someday">언젠가 — 막연하지만 하고 싶은 것</option>
         <option value="idea">아이디어 — 아직 행동이 아닌 생각</option>
+        <option value="waiting">⏳ 대기 중 — 누군가의 응답/결과를 기다리는 중</option>
+      </select>
+    </div>
+    <div class="form-row" id="backlogWaitingFor" style="display:none">
+      <label class="form-label">누구를/무엇을 기다리나요?</label>
+      <input type="text" id="backlogWaitingNote" placeholder="예: 3PL 업체 견적 회신, 디자이너 시안">
+    </div>
+    <div class="form-row">
+      <label class="form-label">프로젝트 연결 (선택)</label>
+      <select id="backlogProject">
+        <option value="">연결 안 함</option>
       </select>
     </div>
     <div class="form-row"><label class="form-label">메모 (선택)</label>
@@ -595,6 +727,8 @@ const state = {
   backlog:   [],
   blocks:    [],
   reviews:   [],
+  projects:  [],
+  vision:    '',
   typeGuide: DEFAULT_TYPES,
   streak:    0,
   focusInterval:null, focusSeconds:0
@@ -614,7 +748,7 @@ function showSync(status) {
 // Save to Firebase + localStorage (localStorage as offline fallback)
 function save() {
   // Always save to localStorage as fallback
-  ['dumpItems','big3','backlog','blocks','reviews','typeGuide'].forEach(k=>localStorage.setItem(k,JSON.stringify(state[k])));
+  ['dumpItems','big3','backlog','blocks','reviews','projects','vision','typeGuide'].forEach(k=>localStorage.setItem(k,JSON.stringify(state[k])));
   localStorage.setItem('streak', state.streak);
 
   // Save to Firebase (debounced 800ms)
@@ -627,6 +761,8 @@ function save() {
       backlog:   state.backlog,
       blocks:    state.blocks,
       reviews:   state.reviews,
+      projects:  state.projects,
+      vision:    state.vision,
       typeGuide: state.typeGuide,
       streak:    state.streak,
       updatedAt: Date.now()
@@ -644,6 +780,8 @@ function loadFromLocalStorage() {
   state.backlog   = JSON.parse(localStorage.getItem('backlog')||'[]');
   state.blocks    = JSON.parse(localStorage.getItem('blocks')||'[]');
   state.reviews   = JSON.parse(localStorage.getItem('reviews')||'[]');
+  state.projects  = JSON.parse(localStorage.getItem('projects')||'[]');
+  state.vision    = JSON.parse(localStorage.getItem('vision')||'""');
   state.typeGuide = JSON.parse(localStorage.getItem('typeGuide')||'null')||DEFAULT_TYPES;
   state.streak    = parseInt(localStorage.getItem('streak')||'0');
 }
@@ -695,7 +833,7 @@ function loadData() {
         state.reviews   = data.reviews   || [];
         state.typeGuide = data.typeGuide || DEFAULT_TYPES;
         state.streak    = data.streak    || 0;
-        ['dumpItems','big3','backlog','blocks','reviews','typeGuide'].forEach(k=>localStorage.setItem(k,JSON.stringify(state[k])));
+        ['dumpItems','big3','backlog','blocks','reviews','projects','vision','typeGuide'].forEach(k=>localStorage.setItem(k,JSON.stringify(state[k])));
         localStorage.setItem('streak', state.streak);
       } else {
         loadFromLocalStorage();
@@ -733,6 +871,8 @@ function retryFirebase() {
           state.backlog   = data.backlog   || state.backlog;
           state.blocks    = data.blocks    || state.blocks;
           state.reviews   = data.reviews   || state.reviews;
+          state.projects  = data.projects  || state.projects;
+          state.vision    = data.vision    || state.vision;
           state.streak    = data.streak    || state.streak;
           renderCurrentTab();
         }
@@ -753,10 +893,13 @@ db.ref(DB_KEY).on('value', snapshot => {
     state.backlog   = data.backlog   || state.backlog;
     state.blocks    = data.blocks    || state.blocks;
     state.reviews   = data.reviews   || state.reviews;
+    state.projects  = data.projects  || state.projects;
+    state.vision    = data.vision    || state.vision;
     state.streak    = data.streak    || state.streak;
     state._lastSaved = data.updatedAt;
     showSync('ok');
     renderCurrentTab();
+    renderVision();
     renderCal && renderCal();
   }
 });
@@ -920,7 +1063,7 @@ function updateDateBar() {
 }
 
 let activeTab = 'brain';
-const TABS=['brain','big3','backlog','timebox','review'];
+const TABS=['projects','brain','big3','backlog','timebox','review'];
 function switchTab(tab) {
   activeTab = tab;
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',TABS[i]===tab));
@@ -929,6 +1072,7 @@ function switchTab(tab) {
   renderCurrentTab();
 }
 function renderCurrentTab() {
+  if(activeTab==='projects')renderProjects();
   if(activeTab==='brain')  { renderDump(); }
   if(activeTab==='big3')   renderBig3();
   if(activeTab==='backlog')renderBacklog(currentFilter);
@@ -1013,6 +1157,7 @@ function renderBig3(){
         <div class="big3-num">${String(i+1).padStart(2,'0')}</div>
         <div class="big3-content">
           <div class="big3-label">TODAY'S PRIORITY ${i+1}</div>
+          ${(()=>{const p=item.projectId?state.projects.find(x=>x.id===item.projectId):null;return p?`<div class="proj-badge" style="color:${p.color};background:${p.color}18">${p.name}</div>`:''})()}
           <div class="big3-text">${escHtml(item.text)}</div>
           ${subs.length===0?`<div class="subtask-hint">💡 첫 번째 물리적 행동은 무엇인가요?<br>동사로 시작하는 서브태스크로 쪼개세요<br><span style="color:var(--accent)">"촬영 장소 도착" → "카메라 세팅" → "10분 영상 녹화"</span></div>`:''}
           <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
@@ -1048,18 +1193,38 @@ function updateStats(items){
 function addBig3(){
   const input=document.getElementById('big3Input');const text=input.value.trim();if(!text)return;
   if(state.big3.filter(i=>i.date===activeDate).length>=3){alert('Big 3는 하루 최대 3개입니다!');return;}
-  state.big3.push({id:uid(),text,done:false,date:activeDate,subtasks:[]});
+  const projId=document.getElementById('big3ProjectSelect').value||'';state.big3.push({id:uid(),text,done:false,date:activeDate,subtasks:[],projectId:projId});
   input.value='';save();renderBig3();
 }
 function toggleBig3(id){
   const item=state.big3.find(i=>i.id===id);if(!item)return;
+  const wasNotDone=!item.done;
   item.done=!item.done;
   if(item.done&&item.subtasks)item.subtasks.forEach(s=>s.done=true);
   save();renderBig3();
+  if(wasNotDone){triggerCompletionBurst();}
+  // Update project progress after toggling
+  updateProjectProgress(item.projectId);
   const td=state.big3.filter(i=>i.date===activeDate);
   if(activeDate===realToday()&&td.length>0&&td.every(i=>i.done||(i.subtasks&&i.subtasks.length>0&&i.subtasks.every(s=>s.done)))){
-    state.streak++;save();setTimeout(()=>alert('🎯 Big 3 완료! 스트릭 '+state.streak+'일!'),100);
+    state.streak++;save();
+    setTimeout(()=>{triggerCompletionBurst();triggerCompletionBurst();},150);
   }
+}
+function triggerCompletionBurst(){
+  const colors=['#E8FF00','#3DDC84','#4C9EFF','#FF8C42','#B67BFF'];
+  const burst=document.createElement('div');
+  burst.className='completion-burst';
+  burst.style.cssText='position:fixed;top:50%;left:50%;z-index:9999;pointer-events:none';
+  for(let i=0;i<8;i++){
+    const dot=document.createElement('div');
+    dot.className='burst-dot';
+    const angle=i*45;const dist=40+Math.random()*20;
+    dot.style.cssText=`background:${colors[i%colors.length]};left:${Math.cos(angle*Math.PI/180)*dist}px;top:${Math.sin(angle*Math.PI/180)*dist}px;animation-delay:${Math.random()*.1}s`;
+    burst.appendChild(dot);
+  }
+  document.body.appendChild(burst);
+  setTimeout(()=>burst.remove(),600);
 }
 function removeBig3(id){state.big3=state.big3.filter(i=>i.id!==id);save();renderBig3();}
 function big3ToBacklog(id){
@@ -1096,7 +1261,7 @@ function removeSubtask(big3Id,subId){
 
 // BACKLOG
 let currentFilter='all';
-const CAT={later:{label:'나중에',color:'#6699aa'},someday:{label:'언젠가',color:'#aaa866'},idea:{label:'아이디어',color:'#bb8866'}};
+const CAT={later:{label:'나중에',color:'#4C9EFF',bg:'rgba(76,158,255,.1)'},someday:{label:'언젠가',color:'#B67BFF',bg:'rgba(182,123,255,.1)'},idea:{label:'아이디어',color:'#FF8C42',bg:'rgba(255,140,66,.1)'},waiting:{label:'⏳ 대기 중',color:'#FF5A5A',bg:'rgba(255,90,90,.1)'}};
 function renderBacklog(filter){
   currentFilter=filter;
   const items=filter==='all'?state.backlog:state.backlog.filter(i=>i.category===filter);
@@ -1132,9 +1297,17 @@ function removeBacklog(id){state.backlog=state.backlog.filter(i=>i.id!==id);save
 function openAddBacklog(){document.getElementById('backlogModal').classList.add('open');}
 function saveBacklogItem(){
   const text=document.getElementById('backlogTask').value.trim();if(!text)return;
-  state.backlog.push({id:uid(),text,category:document.getElementById('backlogCategory').value,note:document.getElementById('backlogNote').value.trim(),date:activeDate});
-  document.getElementById('backlogTask').value='';document.getElementById('backlogNote').value='';
+  const category=document.getElementById('backlogCategory').value;
+  const waitingNote=category==='waiting'?document.getElementById('backlogWaitingNote').value.trim():'';
+  const projectId=document.getElementById('backlogProject').value||'';
+  state.backlog.push({id:uid(),text,category,note:document.getElementById('backlogNote').value.trim(),waitingNote,projectId,date:activeDate});
+  document.getElementById('backlogTask').value='';
+  document.getElementById('backlogNote').value='';
+  document.getElementById('backlogWaitingNote').value='';
   save();closeModal('backlogModal');renderBacklog(currentFilter);
+}
+function onBacklogCategoryChange(sel){
+  document.getElementById('backlogWaitingFor').style.display=sel.value==='waiting'?'block':'none';
 }
 
 // TIME BOXING
@@ -1331,9 +1504,51 @@ function saveReview(){
   save();renderReviews();alert('리뷰 저장 완료!');
 }
 function renderReviews(){
+  // Summary stats
+  const todayBig3=state.big3.filter(i=>i.date===activeDate);
+  const doneBig3=todayBig3.filter(i=>{const s=i.subtasks||[];return i.done||(s.length>0&&s.every(x=>x.done));});
+  const todayBlocks=state.blocks.filter(b=>b.date===activeDate);
+  const doneBlocks=todayBlocks.filter(b=>b.done);
+  const summaryEl=document.getElementById('reviewSummary');
+  if(summaryEl){
+    summaryEl.innerHTML=`<div class="review-stat-row">
+      <div class="review-stat-box">
+        <div class="review-stat-num" style="color:var(--green)">${doneBig3.length}</div>
+        <div class="review-stat-label">Big 3 완료</div>
+      </div>
+      <div class="review-stat-box">
+        <div class="review-stat-num" style="color:var(--blue)">${doneBlocks.length}</div>
+        <div class="review-stat-label">블록 완료</div>
+      </div>
+      <div class="review-stat-box">
+        <div class="review-stat-num" style="color:var(--accent)">${state.streak}</div>
+        <div class="review-stat-label">연속 달성일</div>
+      </div>
+    </div>`;
+  }
+  // Project progress
+  const projEl=document.getElementById('reviewProjectProgress');
+  if(projEl){
+    if(!state.projects.length){
+      projEl.innerHTML=`<div style="font-size:13px;color:var(--text3)">프로젝트를 추가하면 여기서 진행률을 확인할 수 있어요</div>`;
+    } else {
+      projEl.innerHTML=state.projects.map(p=>{
+        const pct=p.progress||0;
+        return `<div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:13px;font-weight:600">${escHtml(p.name)}</span>
+            <span style="font-size:12px;font-weight:700;color:${p.color}">${pct}%</span>
+          </div>
+          <div class="proj-progress-track"><div class="proj-progress-fill" style="width:${pct}%;background:${p.color}"></div></div>
+          ${p.nextAction?`<div style="font-size:11px;color:var(--text3);margin-top:4px">Next: ${escHtml(p.nextAction)}</div>`:''}
+        </div>`;
+      }).join('');
+    }
+  }
+  // History
   const c=document.getElementById('reviewHistory');
-  if(!state.reviews.length){c.innerHTML=`<div style="padding:24px;text-align:center;color:var(--text3);font-size:12px;border:1px dashed var(--border)">아직 리뷰가 없습니다</div>`;return;}
-  c.innerHTML=state.reviews.map(r=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:16px"><span style="font-size:10px;color:var(--accent)">${r.date}</span><span style="font-size:9px;color:var(--text3)">${r.ts||''}</span></div>${r.win?`<div style="margin-bottom:10px"><div style="font-size:9px;color:var(--green);margin-bottom:4px">WIN</div><div style="font-size:13px">${escHtml(r.win)}</div></div>`:''} ${r.miss?`<div style="margin-bottom:10px"><div style="font-size:9px;color:var(--orange);margin-bottom:4px">MISS</div><div style="font-size:13px">${escHtml(r.miss)}</div></div>`:''} ${r.improve?`<div><div style="font-size:9px;color:var(--text3);margin-bottom:4px">TOMORROW</div><div style="font-size:13px">${escHtml(r.improve)}</div></div>`:''}</div>`).join('');
+  if(!state.reviews.length){c.innerHTML=`<div style="padding:24px;text-align:center;color:var(--text3);font-size:12px;border:1px dashed var(--border);border-radius:var(--radius)">아직 리뷰가 없습니다</div>`;return;}
+  c.innerHTML=state.reviews.map(r=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:16px"><span style="font-size:11px;font-weight:600;color:var(--accent)">${r.date}</span><span style="font-size:11px;color:var(--text3)">${r.ts||''}</span></div>${r.win?`<div style="margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:var(--green);margin-bottom:4px">WIN</div><div style="font-size:13px">${escHtml(r.win)}</div></div>`:''} ${r.miss?`<div style="margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:var(--orange);margin-bottom:4px">MISS</div><div style="font-size:13px">${escHtml(r.miss)}</div></div>`:''} ${r.improve?`<div><div style="font-size:10px;font-weight:700;color:var(--text3);margin-bottom:4px">TOMORROW</div><div style="font-size:13px">${escHtml(r.improve)}</div></div>`:''}</div>`).join('');
 }
 
 // UTILS
@@ -1352,11 +1567,149 @@ function closeModal(id){
   }
 }
 
+
+// ===== VISION =====
+function renderVision(){
+  const bar=document.getElementById('visionBar');
+  const txt=document.getElementById('visionText');
+  if(!bar||!txt)return;
+  if(state.vision){
+    bar.style.display='block';
+    txt.innerHTML=`✦ ${escHtml(state.vision)}`;
+    txt.className='';
+  } else {
+    bar.style.display='block';
+    txt.innerHTML='비전을 입력하세요 — 나를 움직이게 하는 단 하나의 문장';
+    txt.className='vision-empty';
+  }
+}
+function openVisionEdit(){
+  document.getElementById('visionInput').value=state.vision||'';
+  document.getElementById('visionModal').classList.add('open');
+  setTimeout(()=>document.getElementById('visionInput').focus(),100);
+}
+function saveVision(){
+  state.vision=document.getElementById('visionInput').value.trim();
+  save();closeModal('visionModal');renderVision();
+}
+
+// ===== PROJECTS =====
+let editingProjectId=null;
+let selectedProjColor='#E8FF00';
+
+function renderProjects(){
+  const c=document.getElementById('projectsContainer');if(!c)return;
+  if(!state.projects.length){
+    c.innerHTML=`<div style="padding:48px;text-align:center;border:1px dashed var(--border);border-radius:var(--radius)">
+      <div style="font-size:32px;margin-bottom:12px">🗂</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:6px">프로젝트가 없습니다</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px">지금 집중하고 있는 것들을 정리해보세요</div>
+      <button class="btn btn-primary" onclick="openAddProject()">+ 첫 프로젝트 추가</button>
+    </div>`;return;
+  }
+  c.innerHTML=state.projects.map(p=>{
+    const pct=p.progress||0;
+    return `<div class="proj-card" onclick="openEditProject('${p.id}')">
+      <div class="proj-accent-bar" style="background:${p.color}"></div>
+      <div style="padding-left:12px">
+        <div class="proj-name">${escHtml(p.name)}</div>
+        <div class="proj-goal">${escHtml(p.goal||'')}</div>
+        <div class="proj-progress-track"><div class="proj-progress-fill" style="width:${pct}%;background:${p.color}"></div></div>
+        <div class="proj-meta">
+          <span style="color:${p.color};font-weight:700">${pct}% 완료</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-xs" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border)" onclick="event.stopPropagation();adjustProgress('${p.id}',-10)">−10%</button>
+            <button class="btn btn-xs" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border)" onclick="event.stopPropagation();adjustProgress('${p.id}',10)">+10%</button>
+          </div>
+        </div>
+        ${p.nextAction?`<div class="proj-next"><span class="proj-next-label">NEXT →</span><span>${escHtml(p.nextAction)}</span></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function adjustProgress(id,delta){
+  const p=state.projects.find(x=>x.id===id);if(!p)return;
+  p.progress=Math.max(0,Math.min(100,(p.progress||0)+delta));
+  if(delta>0)triggerCompletionBurst();
+  save();renderProjects();
+  if(activeTab==='review')renderReviews();
+}
+function updateProjectProgress(projectId){
+  if(!projectId)return;
+  // Auto-calc progress from big3 tasks tagged with this project
+  const relBig3=state.big3.filter(i=>i.projectId===projectId);
+  if(!relBig3.length)return;
+  const done=relBig3.filter(i=>{const s=i.subtasks||[];return i.done||(s.length>0&&s.every(x=>x.done));}).length;
+  // Nudge project progress slightly based on today's completions
+  const p=state.projects.find(x=>x.id===projectId);
+  if(p&&done>0){save();}
+}
+
+function openAddProject(){
+  editingProjectId=null;
+  selectedProjColor='#E8FF00';
+  document.getElementById('projName').value='';
+  document.getElementById('projGoal').value='';
+  document.getElementById('projNext').value='';
+  document.getElementById('projectModalTitle').textContent='새 프로젝트';
+  document.getElementById('projDeleteBtn').style.display='none';
+  document.querySelectorAll('.color-swatch').forEach(s=>{
+    s.classList.toggle('active',s.dataset.color===selectedProjColor);
+  });
+  document.getElementById('projectModal').classList.add('open');
+}
+function openEditProject(id){
+  const p=state.projects.find(x=>x.id===id);if(!p)return;
+  editingProjectId=id;
+  selectedProjColor=p.color||'#E8FF00';
+  document.getElementById('projName').value=p.name||'';
+  document.getElementById('projGoal').value=p.goal||'';
+  document.getElementById('projNext').value=p.nextAction||'';
+  document.getElementById('projectModalTitle').textContent='프로젝트 편집';
+  document.getElementById('projDeleteBtn').style.display='block';
+  document.querySelectorAll('.color-swatch').forEach(s=>{
+    s.classList.toggle('active',s.dataset.color===selectedProjColor);
+  });
+  document.getElementById('projectModal').classList.add('open');
+}
+function selectProjColor(el){
+  selectedProjColor=el.dataset.color;
+  document.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+}
+function saveProject(){
+  const name=document.getElementById('projName').value.trim();if(!name)return;
+  if(editingProjectId){
+    const p=state.projects.find(x=>x.id===editingProjectId);if(!p)return;
+    p.name=name;p.goal=document.getElementById('projGoal').value.trim();
+    p.nextAction=document.getElementById('projNext').value.trim();p.color=selectedProjColor;
+  } else {
+    state.projects.push({id:uid(),name,goal:document.getElementById('projGoal').value.trim(),nextAction:document.getElementById('projNext').value.trim(),color:selectedProjColor,progress:0});
+  }
+  save();closeModal('projectModal');renderProjects();populateProjectSelects();
+}
+function deleteProject(){
+  if(!editingProjectId)return;
+  if(!confirm('이 프로젝트를 삭제할까요?'))return;
+  state.projects=state.projects.filter(x=>x.id!==editingProjectId);
+  save();closeModal('projectModal');renderProjects();populateProjectSelects();
+}
+function populateProjectSelects(){
+  const opts=`<option value="">연결 안 함</option>`+state.projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  const b3=document.getElementById('big3ProjectSelect');
+  const bl=document.getElementById('backlogProject');
+  if(b3)b3.innerHTML=opts.replace('연결 안 함','프로젝트 연결 안 함');
+  if(bl)bl.innerHTML=opts;
+}
+
 // INIT — wrapped so Firebase can call after load
 function initApp() {
   initBlockModal();
   renderTypeGuideDisplay();
   populateBlockTypeSelect();
+  populateProjectSelects();
+  renderVision();
   updateDateBar();
   if(state.dumpItems.filter(i=>(i.date||realToday())===activeDate).length>0){
     document.getElementById('dumpList').style.display='block';
