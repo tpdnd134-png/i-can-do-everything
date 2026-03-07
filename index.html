@@ -2133,9 +2133,10 @@ function openAddProject(){
   selectedProjColor='#E8FF00';
   document.getElementById('projName').value='';
   document.getElementById('projGoal').value='';
-  document.getElementById('projNext').value='';
   document.getElementById('projDeadline').value='';
   document.getElementById('projLoss').value='';
+  const taskEd=document.getElementById('projTaskEditor');
+  if(taskEd)taskEd.innerHTML='';
   const ed=document.getElementById('milestoneEditor');
   if(ed)ed.innerHTML='';
   document.getElementById('milestoneSection').style.display='none';
