@@ -4,364 +4,307 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EXECUTION SYSTEM</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=Noto+Sans+KR:wght@300;400;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg:#0a0a0a;--surface:#111;--surface2:#1a1a1a;--border:#2a2a2a;
-    --accent:#e8ff00;--accent2:#ff4d00;--accent3:#00ffcc;--text:#f0f0f0;--muted:#666;--danger:#ff3333;
+    --bg:#0C0C0E;
+    --surface:#17171A;
+    --surface2:#202024;
+    --surface3:#2A2A2F;
+    --border:#2C2C32;
+    --border2:#38383F;
+    --accent:#E8FF00;
+    --accent-dim:rgba(232,255,0,.12);
+    --green:#3DDC84;
+    --green-dim:rgba(61,220,132,.12);
+    --blue:#4C9EFF;
+    --blue-dim:rgba(76,158,255,.1);
+    --red:#FF5A5A;
+    --red-dim:rgba(255,90,90,.1);
+    --orange:#FF8C42;
+    --purple:#B67BFF;
+    --text:#F0F0F5;
+    --text2:#A0A0B0;
+    --text3:#606070;
+    --danger:#FF5A5A;
+    --radius:14px;
+    --radius-sm:8px;
+    --radius-xs:6px;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
-  body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;overflow-x:hidden;}
-  nav{display:flex;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:100;}
-  .tab{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:2px;padding:16px 20px;cursor:pointer;border-right:1px solid var(--border);color:var(--muted);transition:all .2s;text-transform:uppercase;background:transparent;user-select:none;}
-  .tab:hover{color:var(--text);background:var(--surface);}
-  .tab.active{color:var(--accent);background:var(--surface);border-bottom:2px solid var(--accent);}
-  .logo{font-family:'Bebas Neue',sans-serif;font-size:22px;padding:14px 28px;letter-spacing:4px;margin-left:auto;color:var(--accent);border-left:1px solid var(--border);}
-  .page{display:none;padding:40px;max-width:1200px;margin:0 auto;}
-  .page.active{display:block;animation:fadeIn .25s ease;}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-  .page-title{font-family:'Bebas Neue',sans-serif;font-size:72px;letter-spacing:6px;line-height:1;margin-bottom:8px;}
-  .page-sub{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:48px;}
-  h3{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:16px;}
-  .card{background:var(--surface);border:1px solid var(--border);padding:28px;margin-bottom:20px;}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
-  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;}
-  textarea,input[type="text"],select{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:14px;padding:12px 16px;width:100%;outline:none;transition:border-color .2s;resize:none;}
-  textarea:focus,input:focus,select:focus{border-color:var(--accent);}
-  select option{background:var(--surface2);}
-  textarea.brain-dump{min-height:180px;line-height:1.8;}
-  .btn{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:14px 28px;cursor:pointer;border:none;transition:all .2s;}
-  .btn-primary{background:var(--accent);color:#000;}.btn-primary:hover{background:#fff;}
-  .btn-secondary{background:transparent;border:1px solid var(--border);color:var(--muted);}.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
-  .btn-danger{background:transparent;border:1px solid var(--danger);color:var(--danger);}.btn-danger:hover{background:var(--danger);color:#fff;}
-  .btn-sm{padding:8px 16px;font-size:10px;}.btn-xs{padding:5px 10px;font-size:9px;letter-spacing:1px;}
+  body{background:var(--bg);color:var(--text);font-family:'Pretendard','Noto Sans KR',sans-serif;min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
 
-  .dump-item{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:1px solid var(--border);margin-bottom:6px;background:var(--surface);}
-  .dump-text{font-size:14px;line-height:1.5;margin-bottom:8px;}
+  /* NAV */
+  nav{display:flex;align-items:center;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(12,12,14,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);z-index:100;padding:0 8px;}
+  .tab{font-size:13px;font-weight:500;padding:16px 18px;cursor:pointer;color:var(--text3);transition:color .2s;background:transparent;border:none;user-select:none;position:relative;letter-spacing:-.2px;}
+  .tab:hover{color:var(--text2);}
+  .tab.active{color:var(--text);font-weight:700;}
+  .tab.active::after{content:'';position:absolute;bottom:0;left:18px;right:18px;height:2px;background:var(--accent);border-radius:2px 2px 0 0;}
+  .logo{font-size:15px;font-weight:800;padding:0 20px;margin-left:auto;color:var(--text);letter-spacing:-.5px;}
+  .logo span{color:var(--accent);}
+
+  /* PAGE */
+  .page{display:none;padding:32px 40px;max-width:960px;margin:0 auto;}
+  .page.active{display:block;animation:fadeUp .2s ease;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+  /* HEADINGS */
+  .page-title{font-size:28px;font-weight:800;letter-spacing:-.8px;margin-bottom:4px;line-height:1.2;}
+  .page-sub{font-size:13px;color:var(--text3);margin-bottom:32px;letter-spacing:-.2px;font-weight:400;}
+  h3{font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);margin-bottom:14px;}
+
+  /* CARDS */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:16px;}
+
+  /* GRID */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+
+  /* INPUTS */
+  textarea,input[type="text"],select{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Pretendard','Noto Sans KR',sans-serif;font-size:14px;font-weight:400;padding:12px 16px;width:100%;outline:none;transition:border-color .15s,background .15s;resize:none;border-radius:var(--radius-sm);}
+  textarea:focus,input:focus,select:focus{border-color:var(--border2);background:var(--surface3);}
+  select option{background:var(--surface2);}
+  textarea.brain-dump{min-height:160px;line-height:1.8;}
+
+  /* BUTTONS */
+  .btn{font-family:'Pretendard','Noto Sans KR',sans-serif;font-size:13px;font-weight:600;letter-spacing:-.2px;padding:12px 24px;cursor:pointer;border:none;transition:all .15s;border-radius:var(--radius-sm);}
+  .btn-primary{background:var(--accent);color:#000;}.btn-primary:hover{filter:brightness(1.08);}
+  .btn-secondary{background:var(--surface2);border:1px solid var(--border);color:var(--text2);}.btn-secondary:hover{background:var(--surface3);color:var(--text);}
+  .btn-danger{background:var(--red-dim);border:1px solid transparent;color:var(--red);}.btn-danger:hover{background:var(--red);color:#fff;}
+  .btn-sm{padding:8px 16px;font-size:12px;}
+  .btn-xs{padding:5px 12px;font-size:11px;}
+
+  /* DUMP */
+  .dump-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px;background:var(--surface);transition:background .15s;}
+  .dump-text{font-size:14px;line-height:1.5;margin-bottom:10px;font-weight:500;}
   .dump-actions{display:flex;gap:6px;flex-wrap:wrap;}
 
-  .big3-item{background:var(--surface2);border:1px solid var(--border);border-left:4px solid var(--accent);padding:20px 24px;margin-bottom:16px;}
-  .big3-item.all-done{border-left-color:var(--accent3);opacity:.6;}
+  /* BIG 3 */
+  .big3-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;margin-bottom:14px;transition:border-color .2s;}
+  .big3-item:hover{border-color:var(--border2);}
+  .big3-item.all-done{border-color:var(--green-dim);opacity:.7;}
   .big3-top{display:flex;align-items:flex-start;gap:16px;}
-  .big3-num{font-family:'Bebas Neue',sans-serif;font-size:48px;color:var(--accent);line-height:1;min-width:40px;}
-  .big3-item.all-done .big3-num{color:var(--accent3);}
+  .big3-num{font-size:13px;font-weight:700;color:var(--accent);min-width:28px;padding-top:2px;letter-spacing:-.2px;}
+  .big3-item.all-done .big3-num{color:var(--green);}
   .big3-content{flex:1;}
-  .big3-label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:4px;}
-  .big3-text{font-size:16px;font-weight:700;margin-bottom:10px;}
-  .big3-actions{display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
+  .big3-label{font-size:11px;font-weight:500;color:var(--text3);margin-bottom:3px;letter-spacing:-.1px;}
+  .big3-text{font-size:16px;font-weight:700;margin-bottom:12px;letter-spacing:-.4px;line-height:1.4;}
+  .big3-actions{display:flex;flex-direction:column;gap:6px;align-items:flex-end;}
 
-  .subtask-hint{font-family:'Space Mono',monospace;font-size:9px;color:#aaa;letter-spacing:1px;margin:6px 0 12px;padding:9px 12px;border-left:2px solid var(--accent);background:#0f1400;line-height:1.8;}
-  .subtask-list{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
-  .subtask-item{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:2px;cursor:pointer;transition:background .15s;border-bottom:1px solid #1c1c1c;}
+  /* SUBTASKS */
+  .subtask-hint{font-size:12px;color:var(--text3);margin:4px 0 12px;padding:10px 14px;border-radius:var(--radius-xs);background:var(--surface2);line-height:1.7;font-weight:400;}
+  .subtask-list{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+  .subtask-item{display:flex;align-items:center;gap:12px;padding:10px 8px;border-radius:var(--radius-xs);cursor:pointer;transition:background .12s;border-bottom:1px solid var(--border);}
   .subtask-item:last-child{border-bottom:none;}
-  .subtask-item:hover{background:rgba(255,255,255,.03);}
-  .subtask-item.done-item{background:rgba(0,255,204,.03);}
-  .sub-check{width:22px;height:22px;border:2px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;border-radius:3px;}
-  .subtask-item:hover .sub-check{border-color:var(--accent3);}
-  .sub-check.done{border-color:var(--accent3);background:var(--accent3);box-shadow:0 0 8px rgba(0,255,204,.3);}
-  .sub-check.done::after{content:'✓';color:#000;font-size:12px;font-weight:900;}
-  .sub-text{flex:1;font-size:14px;line-height:1.4;transition:all .2s;user-select:none;}
-  .sub-text.done{text-decoration:line-through;color:var(--muted);opacity:.6;}
+  .subtask-item:hover{background:var(--surface2);}
+  .subtask-item.done-item{opacity:.6;}
+  .sub-check{width:20px;height:20px;border:1.5px solid var(--border2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;border-radius:50%;}
+  .subtask-item:hover .sub-check{border-color:var(--green);}
+  .sub-check.done{border-color:var(--green);background:var(--green);}
+  .sub-check.done::after{content:'✓';color:#000;font-size:11px;font-weight:800;}
+  .sub-text{flex:1;font-size:14px;line-height:1.4;transition:all .15s;user-select:none;font-weight:400;}
+  .sub-text.done{text-decoration:line-through;color:var(--text3);}
   .subtask-add{display:flex;gap:8px;margin-top:10px;}
-  .subtask-add input{font-size:12px;padding:8px 12px;}
-  .progress-bar{height:3px;background:var(--surface2);margin-top:8px;overflow:hidden;}
-  .progress-fill{height:100%;background:var(--accent);transition:width .4s ease;}
-  .progress-text{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);margin-top:4px;}
+  .subtask-add input{font-size:13px;padding:9px 14px;}
+  .progress-bar{height:3px;background:var(--surface3);margin-top:10px;border-radius:2px;overflow:hidden;}
+  .progress-fill{height:100%;background:var(--accent);transition:width .5s cubic-bezier(.34,1.56,.64,1);border-radius:2px;}
+  .progress-text{font-size:11px;color:var(--text3);margin-top:5px;font-weight:500;}
 
-  .filter-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
-  .filter-btn{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;padding:6px 14px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;text-transform:uppercase;transition:all .15s;}
-  .filter-btn.active{border-color:var(--accent);color:var(--accent);}
-  .backlog-item{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:1px solid var(--border);margin-bottom:6px;background:var(--surface);transition:background .15s;}
+  /* BACKLOG */
+  .filter-row{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+  .filter-btn{font-size:12px;font-weight:500;padding:6px 14px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;border-radius:20px;transition:all .15s;font-family:'Pretendard','Noto Sans KR',sans-serif;}
+  .filter-btn:hover{background:var(--surface2);color:var(--text2);}
+  .filter-btn.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
+  .backlog-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px;background:var(--surface);transition:background .12s;}
   .backlog-item:hover{background:var(--surface2);}
-  .cat-badge{font-family:'Space Mono',monospace;font-size:8px;padding:2px 8px;border:1px solid;text-transform:uppercase;flex-shrink:0;margin-top:2px;letter-spacing:1px;}
+  .cat-badge{font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;flex-shrink:0;margin-top:1px;letter-spacing:-.1px;}
 
-  .time-grid{display:grid;grid-template-columns:80px 1fr;gap:4px;max-height:600px;overflow-y:auto;}
-  .time-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);padding:6px 8px;text-align:right;display:flex;align-items:center;justify-content:flex-end;letter-spacing:1px;}
-  .time-block{min-height:48px;border:1px solid var(--border);padding:8px 12px;font-size:13px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:space-between;background:var(--surface);}
-  .time-block:hover{border-color:var(--accent);}
-  .time-block.deep{background:#1a1f00;border-color:#3a4a00;}
-  .time-block.admin{background:#0d1a1a;border-color:#0a3333;}
-  .time-block.personal{background:#1a0d1a;border-color:#330033;}
-  .time-block.buffer{background:#1a1000;border-color:#332000;}
-  .time-block.done-block{opacity:.4;text-decoration:line-through;}
-  .block-tag{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:2px 6px;border:1px solid;}
-  .tag-deep{color:var(--accent);border-color:var(--accent);}
-  .tag-admin{color:var(--accent3);border-color:var(--accent3);}
-  .tag-personal{color:#cc88ff;border-color:#cc88ff;}
-  .tag-buffer{color:var(--accent2);border-color:var(--accent2);}
+  /* TIME BOXING */
+  .time-grid{display:grid;grid-template-columns:64px 1fr;gap:4px;max-height:600px;overflow-y:auto;}
+  .time-label{font-size:11px;font-weight:500;color:var(--text3);padding:6px 8px;text-align:right;display:flex;align-items:center;justify-content:flex-end;}
+  .time-block{min-height:48px;border:1px solid var(--border);border-radius:var(--radius-xs);padding:8px 14px;font-size:13px;cursor:pointer;transition:all .12s;display:flex;align-items:center;justify-content:space-between;background:var(--surface);}
+  .time-block:hover{background:var(--surface2);}
+  .time-block.deep{background:rgba(232,255,0,.06);border-color:rgba(232,255,0,.2);}
+  .time-block.admin{background:var(--green-dim);border-color:rgba(61,220,132,.2);}
+  .time-block.personal{background:rgba(182,123,255,.08);border-color:rgba(182,123,255,.2);}
+  .time-block.buffer{background:rgba(255,140,66,.06);border-color:rgba(255,140,66,.2);}
+  .time-block.done-block{opacity:.35;text-decoration:line-through;}
+  .block-tag{font-size:10px;font-weight:600;letter-spacing:-.1px;padding:2px 8px;border-radius:4px;}
+  .tag-deep{background:var(--accent-dim);color:var(--accent);}
+  .tag-admin{background:var(--green-dim);color:var(--green);}
+  .tag-personal{background:rgba(182,123,255,.12);color:var(--purple);}
+  .tag-buffer{background:rgba(255,140,66,.1);color:var(--orange);}
 
-  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:1000;align-items:center;justify-content:center;}
+  /* MODAL */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:1000;align-items:center;justify-content:center;}
   .modal-overlay.open{display:flex;}
-  .modal{background:var(--surface);border:1px solid var(--border);padding:36px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;}
-  .modal h2{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:4px;margin-bottom:24px;color:var(--accent);}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+  .modal h2{font-size:22px;font-weight:800;letter-spacing:-.6px;margin-bottom:24px;color:var(--text);}
   .form-row{margin-bottom:16px;}
-  .form-label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;display:block;}
-  .modal-actions{display:flex;gap:12px;margin-top:24px;}
-  .stat-card{background:var(--surface);border:1px solid var(--border);padding:24px;text-align:center;}
-  .stat-num{font-family:'Bebas Neue',sans-serif;font-size:56px;letter-spacing:2px;line-height:1;color:var(--accent);}
-  .stat-label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-top:8px;}
+  .form-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;display:block;}
+  .modal-actions{display:flex;gap:10px;margin-top:24px;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;text-align:center;}
+  .stat-num{font-size:48px;font-weight:800;letter-spacing:-2px;line-height:1;color:var(--text);}
+  .stat-label{font-size:11px;font-weight:500;color:var(--text3);margin-top:6px;letter-spacing:-.1px;}
   .header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
-  .divider{border:none;border-top:1px solid var(--border);margin:32px 0;}
-  .check-btn{width:28px;height:28px;border:2px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
-  .check-btn:hover{border-color:var(--accent3);}
-  .check-btn.checked{border-color:var(--accent3);background:var(--accent3);}
-  .check-btn.checked::after{content:'✓';color:#000;font-size:14px;font-weight:900;}
-  .focus-banner{background:var(--accent);color:#000;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:2px;font-weight:700;text-transform:uppercase;}
-  .focus-timer{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:3px;}
-  ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);}
-  .import-tab{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;padding:8px 0;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);flex:1;text-transform:uppercase;transition:all .15s;}
+  .divider{border:none;border-top:1px solid var(--border);margin:28px 0;}
+  .check-btn{width:26px;height:26px;border:1.5px solid var(--border2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;border-radius:50%;}
+  .check-btn:hover{border-color:var(--green);}
+  .check-btn.checked{border-color:var(--green);background:var(--green);}
+  .check-btn.checked::after{content:'✓';color:#000;font-size:13px;font-weight:800;}
+
+  /* FOCUS BANNER */
+  .focus-banner{background:var(--accent);color:#000;padding:12px 28px;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:700;letter-spacing:-.2px;}
+  .focus-timer{font-size:24px;font-weight:800;letter-spacing:-1px;}
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar{width:4px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+  /* IMPORT TABS */
+  .import-tab{font-size:12px;font-weight:600;padding:8px 0;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text3);flex:1;transition:all .15s;border-radius:var(--radius-xs);font-family:'Pretendard','Noto Sans KR',sans-serif;}
   .import-tab.active{background:var(--accent);color:#000;border-color:var(--accent);}
 
   /* DATE BAR */
-  .date-bar{display:flex;align-items:center;justify-content:center;gap:0;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:49px;z-index:99;}
-  .date-nav-btn{font-family:'Space Mono',monospace;font-size:16px;padding:10px 20px;cursor:pointer;border:none;border-right:1px solid var(--border);background:transparent;color:var(--muted);transition:all .15s;user-select:none;}
-  .date-nav-btn:hover{color:var(--accent);background:var(--surface2);}
-  .date-nav-btn:last-child{border-right:none;border-left:1px solid var(--border);}
-  .date-display{font-family:'Space Mono',monospace;font-size:12px;letter-spacing:3px;padding:10px 28px;cursor:pointer;color:var(--text);border:none;background:transparent;transition:all .15s;text-transform:uppercase;min-width:280px;text-align:center;}
+  .date-bar{display:flex;align-items:center;justify-content:center;gap:0;border-bottom:1px solid var(--border);background:rgba(12,12,14,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);position:sticky;top:50px;z-index:99;}
+  .date-nav-btn{font-size:16px;padding:10px 20px;cursor:pointer;border:none;background:transparent;color:var(--text3);transition:all .15s;user-select:none;font-family:'Pretendard',sans-serif;}
+  .date-nav-btn:hover{color:var(--text);}
+  .date-display{font-size:13px;font-weight:500;letter-spacing:-.2px;padding:10px 28px;cursor:pointer;color:var(--text);border:none;background:transparent;transition:all .15s;min-width:240px;text-align:center;font-family:'Pretendard','Noto Sans KR',sans-serif;}
   .date-display:hover{color:var(--accent);}
-  .date-display.future{color:var(--accent3);}
-  .date-display.past{color:var(--muted);}
-  .not-today-banner{background:var(--surface2);border-bottom:2px solid var(--accent3);padding:10px 40px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--accent3);display:none;}
-  .not-today-banner.future{border-color:var(--accent3);color:var(--accent3);}
-  .not-today-banner.past{border-color:var(--muted);color:var(--muted);}
-  /* CUSTOM CALENDAR POPUP */
-  #calPopup{display:none;position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);padding:20px;z-index:500;box-shadow:0 12px 40px rgba(0,0,0,.8);min-width:300px;}
+  .date-display.future{color:var(--blue);}
+  .date-display.past{color:var(--text3);}
+  .not-today-banner{background:var(--surface2);border-bottom:1px solid var(--border);padding:8px 40px;font-size:12px;font-weight:500;color:var(--text3);display:none;}
+  .not-today-banner.future{color:var(--blue);}
+  .not-today-banner.past{color:var(--text3);}
+
+  /* CALENDAR POPUP */
+  #calPopup{display:none;position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:20px;z-index:500;box-shadow:0 20px 60px rgba(0,0,0,.6);min-width:300px;}
   .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
-  .cal-month-label{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--accent);}
-  .cal-nav{font-family:'Space Mono',monospace;font-size:14px;padding:4px 12px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .15s;}
-  .cal-nav:hover{color:var(--accent);border-color:var(--accent);}
+  .cal-month-label{font-size:16px;font-weight:800;letter-spacing:-.5px;color:var(--text);}
+  .cal-nav{font-size:14px;padding:6px 12px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text3);transition:all .15s;border-radius:var(--radius-xs);font-family:'Pretendard',sans-serif;}
+  .cal-nav:hover{color:var(--text);border-color:var(--border2);}
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
-  .cal-day-label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;text-align:center;color:var(--muted);padding:4px 0;text-transform:uppercase;}
-  .cal-day-label:first-child{color:#ff6666;}
-  .cal-day-label:last-child{color:#6699ff;}
-  .cal-cell{font-family:'Space Mono',monospace;font-size:11px;text-align:center;padding:7px 4px;cursor:pointer;border:1px solid transparent;transition:all .15s;position:relative;}
-  .cal-cell:hover:not(.empty){border-color:var(--accent);color:var(--accent);}
+  .cal-day-label{font-size:10px;font-weight:600;text-align:center;color:var(--text3);padding:4px 0;letter-spacing:-.1px;}
+  .cal-day-label:first-child{color:var(--red);}
+  .cal-day-label:last-child{color:var(--blue);}
+  .cal-cell{font-size:12px;font-weight:500;text-align:center;padding:7px 4px;cursor:pointer;border:1px solid transparent;transition:all .12s;position:relative;border-radius:var(--radius-xs);font-family:'Pretendard',sans-serif;}
+  .cal-cell:hover:not(.empty){background:var(--surface2);color:var(--text);}
   .cal-cell.empty{cursor:default;pointer-events:none;}
   .cal-cell.today-cell{border-color:var(--accent)!important;color:var(--accent);font-weight:700;}
   .cal-cell.selected-cell{background:var(--accent);color:#000!important;font-weight:700;border-color:var(--accent)!important;}
-  .cal-cell.has-data::after{content:'';position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--accent3);}
+  .cal-cell.has-data::after{content:'';position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:3px;height:3px;border-radius:50%;background:var(--green);}
   .cal-cell.selected-cell.has-data::after{background:#000;}
-  .cal-cell.sun{color:#ff6666;}
-  .cal-cell.sat{color:#6699ff;}
-  .cal-cell.other-month{opacity:.3;}
+  .cal-cell.sun{color:var(--red);}
+  .cal-cell.sat{color:var(--blue);}
+  .cal-cell.other-month{opacity:.25;}
   .cal-footer{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
-  .cal-today-btn{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;padding:6px 14px;cursor:pointer;border:1px solid var(--accent);background:transparent;color:var(--accent);text-transform:uppercase;transition:all .15s;}
-  .cal-today-btn:hover{background:var(--accent);color:#000;}
-  .cal-legend{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);display:flex;align-items:center;gap:6px;}
-  .cal-legend-dot{width:6px;height:6px;border-radius:50%;background:var(--accent3);display:inline-block;}
+  .cal-today-btn{font-size:11px;font-weight:600;padding:6px 14px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .15s;border-radius:20px;font-family:'Pretendard',sans-serif;}
+  .cal-today-btn:hover{background:var(--surface2);}
+  .cal-legend{font-size:11px;font-weight:500;color:var(--text3);display:flex;align-items:center;gap:6px;}
+  .cal-legend-dot{width:5px;height:5px;border-radius:50%;background:var(--green);display:inline-block;}
 
   /* =============================================
      MOBILE RESPONSIVE (max-width: 768px)
   ============================================= */
   @media (max-width: 768px) {
-
-    /* NAV — 탭을 하단 고정 바로 이동 */
     nav {
       position: fixed;
-      bottom: 0;
-      top: auto;
+      bottom: 0; top: auto;
       left: 0; right: 0;
       z-index: 200;
       border-top: 1px solid var(--border);
       border-bottom: none;
-      background: var(--bg);
+      background: rgba(12,12,14,.96);
       justify-content: space-around;
-      overflow-x: auto;
+      padding: 0;
     }
     .tab {
-      font-size: 9px;
-      padding: 10px 8px 6px;
-      border-right: none;
-      border-bottom: none;
+      font-size: 10px;
+      font-weight: 500;
+      padding: 8px 4px 10px;
       flex: 1;
       text-align: center;
-      letter-spacing: 0.5px;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 3px;
       min-width: 0;
     }
-    .tab.active {
-      border-bottom: none;
-      border-top: 2px solid var(--accent);
-      background: var(--surface);
-    }
-    /* 탭 아이콘 추가 */
-    .tab[onclick*="brain"]::before  { content: '🧠'; font-size: 16px; }
-    .tab[onclick*="big3"]::before   { content: '🎯'; font-size: 16px; }
-    .tab[onclick*="backlog"]::before{ content: '📋'; font-size: 16px; }
-    .tab[onclick*="timebox"]::before{ content: '⏱'; font-size: 16px; }
-    .tab[onclick*="review"]::before { content: '📝'; font-size: 16px; }
-
-    /* 로고 + 동기화 상태 — 상단으로 */
-    nav > div:last-child {
-      display: none; /* 로고 숨김, 공간 절약 */
-    }
+    .tab.active::after { left: 25%; right: 25%; }
+    .tab[onclick*="brain"]::before  { content: '🧠'; font-size: 18px; }
+    .tab[onclick*="big3"]::before   { content: '🎯'; font-size: 18px; }
+    .tab[onclick*="backlog"]::before{ content: '📋'; font-size: 18px; }
+    .tab[onclick*="timebox"]::before{ content: '⏱'; font-size: 18px; }
+    .tab[onclick*="review"]::before { content: '📝'; font-size: 18px; }
+    nav > div:last-child { display: none; }
     #syncStatus { display: none !important; }
     #syncBadge { display: block !important; }
 
-    /* DATE BAR — sticky top 조정 (상단 고정) */
-    .date-bar {
-      top: 0;
-      padding: 0;
-    }
-    .date-display {
-      font-size: 10px;
-      letter-spacing: 1px;
-      min-width: 0;
-      padding: 10px 12px;
-    }
-    .date-nav-btn {
-      padding: 10px 14px;
-      font-size: 18px;
-    }
-    .not-today-banner {
-      padding: 8px 16px;
-      font-size: 9px;
-      letter-spacing: 1px;
-    }
+    .date-bar { top: 0; }
+    .date-display { font-size: 12px; min-width: 0; padding: 10px 12px; }
+    .date-nav-btn { padding: 10px 16px; }
+    .not-today-banner { padding: 6px 16px; font-size: 11px; }
 
-    /* 달력 팝업 — 전체 너비 */
-    #calPopup {
-      left: 8px;
-      right: 8px;
-      transform: none;
-      min-width: 0;
-      width: calc(100vw - 16px);
-      padding: 16px;
-    }
+    #calPopup { left: 8px; right: 8px; transform: none; width: calc(100vw - 16px); min-width: 0; border-radius: 16px; }
 
-    /* PAGE — 여백 줄이기, 하단 탭바 공간 확보 */
-    .page {
-      padding: 16px 16px 100px;
-    }
-    .page-title {
-      font-size: 40px;
-      letter-spacing: 2px;
-      margin-bottom: 4px;
-    }
-    .page-sub {
-      font-size: 9px;
-      letter-spacing: 1px;
-      margin-bottom: 24px;
-    }
+    .page { padding: 20px 16px 100px; }
+    .page-title { font-size: 24px; margin-bottom: 4px; }
+    .page-sub { font-size: 12px; margin-bottom: 24px; }
 
-    /* GRID — 1열로 */
     .grid2, .grid3 { grid-template-columns: 1fr; gap: 12px; }
+    .card { padding: 18px; }
 
-    /* CARD */
-    .card { padding: 16px; }
+    .btn { padding: 12px 20px; }
+    .btn-sm { padding: 8px 14px; }
+    .btn-xs { padding: 5px 10px; font-size: 11px; }
 
-    /* BUTTONS */
-    .btn { padding: 12px 20px; font-size: 10px; }
-    .btn-sm { padding: 8px 12px; font-size: 9px; }
-    .btn-xs { padding: 6px 10px; font-size: 9px; }
+    textarea.brain-dump { min-height: 120px; }
+    .dump-item { padding: 12px 14px; }
 
-    /* BRAIN DUMP */
-    textarea.brain-dump { min-height: 120px; font-size: 15px; }
-    .dump-actions { gap: 6px; }
-    .dump-item { padding: 12px; }
-
-    /* BIG 3 */
-    .big3-item { padding: 14px; }
-    .big3-top { gap: 10px; }
-    .big3-num { font-size: 36px; min-width: 30px; }
+    .big3-item { padding: 16px; }
+    .big3-num { font-size: 13px; }
     .big3-text { font-size: 15px; }
-    .big3-actions {
-      flex-direction: row;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      gap: 6px;
-      margin-top: 12px;
-    }
-    /* big3-top을 세로로 */
+    .big3-actions { flex-direction: row; flex-wrap: wrap; justify-content: flex-end; gap: 6px; margin-top: 10px; width: 100%; }
     .big3-top { flex-wrap: wrap; }
-    .big3-actions { width: 100%; }
 
-    /* 서브태스크 */
-    .subtask-add { flex-direction: row; }
     .subtask-add input { font-size: 14px; }
     .sub-text { font-size: 13px; }
 
-    /* BACKLOG */
-    .backlog-item { padding: 12px; flex-wrap: wrap; gap: 8px; }
-    .filter-row { gap: 6px; }
-    .filter-btn { padding: 6px 10px; font-size: 9px; }
+    .backlog-item { padding: 12px 14px; flex-wrap: wrap; gap: 8px; }
+    .filter-btn { font-size: 11px; padding: 5px 12px; }
 
-    /* TIME BOXING */
-    .time-grid { grid-template-columns: 52px 1fr; max-height: none; }
-    .time-label { font-size: 9px; padding: 6px 4px; }
-    .time-block { 
-      padding: 8px; 
-      font-size: 12px;
-      flex-wrap: wrap;
-      gap: 6px;
-      min-height: 52px;
-    }
+    .time-grid { grid-template-columns: 46px 1fr; max-height: none; }
+    .time-label { font-size: 10px; padding: 6px 4px; }
+    .time-block { padding: 8px 10px; font-size: 12px; flex-wrap: wrap; gap: 4px; min-height: 52px; }
     .time-block > span { width: 100%; }
-    .time-block > div { margin-left: auto; }
 
-    /* MODAL */
-    .modal {
-      padding: 24px 18px;
-      width: 100%;
-      max-width: 100vw;
-      max-height: 85vh;
-      border-radius: 0;
-      margin: 0;
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      top: auto;
-      border-bottom: none;
-    }
-    .modal-overlay {
-      align-items: flex-end;
-    }
-    .modal h2 { font-size: 28px; margin-bottom: 16px; }
+    .modal { padding: 24px 20px; width: 100%; max-width: 100vw; max-height: 85vh; border-radius: 20px 20px 0 0; position: fixed; bottom: 0; left: 0; right: 0; top: auto; border-bottom: none; }
+    .modal-overlay { align-items: flex-end; }
+    .modal h2 { font-size: 20px; }
     .modal-actions { flex-wrap: wrap; }
     .modal-actions .btn { flex: 1; text-align: center; }
 
-    /* FOCUS BANNER */
-    .focus-banner {
-      padding: 10px 16px;
-      font-size: 9px;
-    }
-    .focus-timer { font-size: 22px; }
+    .focus-banner { padding: 10px 16px; font-size: 12px; }
+    .focus-timer { font-size: 20px; }
 
-    /* STAT CARDS */
-    .stat-num { font-size: 40px; }
-    .stat-card { padding: 16px; }
-
-    /* HEADER ROW */
+    .stat-num { font-size: 40px; letter-spacing: -1px; }
+    .stat-card { padding: 18px; }
     .header-row { flex-wrap: wrap; gap: 10px; }
+    h3 { font-size: 10px; }
 
-    /* h3 섹션 헤더 */
-    h3 { font-size: 9px; letter-spacing: 2px; margin-bottom: 12px; }
-
-    /* 머스크 원칙 바 */
-    .musk-bar-row { flex-wrap: wrap; }
-
-    /* 로딩 오버레이 */
-    #loadingOverlay > div:first-child { font-size: 36px; }
-
-    /* 입력 필드 — 모바일 확대 방지 */
     textarea, input[type="text"], select { font-size: 16px !important; }
-
-    /* 터치 타깃 최소 44px */
-    .check-btn { width: 36px; height: 36px; }
-    .sub-check { width: 26px; height: 26px; }
-    .subtask-item button { opacity: 0.4 !important; }
+    .check-btn { width: 34px; height: 34px; }
+    .sub-check { width: 24px; height: 24px; }
+    .subtask-item button { opacity: 0.5 !important; }
     .subtask-item { padding: 11px 8px; }
-    .cal-cell { padding: 10px 4px; font-size: 13px; }
+    .cal-cell { padding: 10px 4px; font-size: 12px; }
   }
 
   @media (max-width: 380px) {
-    .page-title { font-size: 32px; }
-    .tab { font-size: 8px; padding: 8px 4px 6px; }
-    .date-display { font-size: 9px; padding: 10px 8px; }
+    .page-title { font-size: 22px; }
+    .tab { font-size: 9px; padding: 7px 2px 9px; }
+    .date-display { font-size: 11px; }
   }
 </style>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -383,19 +326,19 @@
   <div class="tab" onclick="switchTab('backlog')">03 Backlog</div>
   <div class="tab" onclick="switchTab('timebox')">04 Time Boxing</div>
   <div class="tab" onclick="switchTab('review')">05 Review</div>
-  <div style="display:flex;align-items:center;gap:16px;margin-left:auto;border-left:1px solid var(--border);padding:0 24px">
-    <span id="syncStatus" style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--muted)">연결 중...</span>
-    <div class="logo" style="border-left:none;padding:14px 0;margin-left:0">EXEC//SYS</div>
+  <div style="display:flex;align-items:center;gap:16px;margin-left:auto;padding:0 20px">
+    <span id="syncStatus" style="font-size:11px;font-weight:500;color:var(--text3)">연결 중...</span>
+    <div class="logo">EXEC<span>//</span>SYS</div>
   </div>
 </nav>
 <!-- mobile sync badge (shown only on mobile via CSS) -->
-<div id="syncBadge" style="display:none;position:fixed;top:6px;right:10px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--muted);z-index:300;background:var(--bg);padding:2px 6px;border:1px solid var(--border)">연결 중...</div>
+<div id="syncBadge" style="display:none;position:fixed;top:6px;right:10px;font-size:9px;color:var(--text3);z-index:300;background:var(--bg);padding:2px 6px;border:1px solid var(--border)">연결 중...</div>
 
 <!-- LOADING OVERLAY -->
 <div id="loadingOverlay" style="position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
-  <div style="font-family:'Bebas Neue',sans-serif;font-size:48px;letter-spacing:6px;color:var(--accent)">EXEC//SYS</div>
-  <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:3px;color:var(--muted)">Firebase 연결 중...</div>
-  <div style="width:200px;height:2px;background:var(--surface2);margin-top:8px"><div id="loadingBar" style="height:100%;background:var(--accent);width:0%;transition:width .4s ease"></div></div>
+  <div style="font-size:28px;font-weight:800;letter-spacing:-.8px;color:var(--text)">EXEC<span style="color:var(--accent)">//</span>SYS</div>
+  <div style="font-size:13px;color:var(--text3);font-weight:400;margin-top:4px">Firebase 연결 중...</div>
+  <div style="width:180px;height:2px;background:var(--surface2);margin-top:8px;border-radius:2px"><div id="loadingBar" style="height:100%;background:var(--accent);width:0%;transition:width .4s ease;border-radius:2px"></div></div>
 </div>
 
 <!-- DATE BAR -->
@@ -422,11 +365,11 @@
 
 <!-- 01 BRAIN DUMP -->
 <div class="page active" id="page-brain">
-  <div class="page-title">BRAIN<br>DUMP</div>
+  <div class="page-title">Brain Dump</div>
   <div class="page-sub">머릿속을 비워라 — 판단 없이 전부 쏟아내라</div>
   <div class="card">
     <h3>① 지금 머릿속에 있는 모든 것</h3>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;font-family:'Space Mono',monospace;letter-spacing:1px">걱정, 할 일, 아이디어 — 한 줄에 하나씩, 판단 없이</p>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:16px;letter-spacing:1px">걱정, 할 일, 아이디어 — 한 줄에 하나씩, 판단 없이</p>
     <textarea class="brain-dump" id="dumpInput" placeholder="예:&#10;다큐 촬영 시작해야 함&#10;홍대 배달 스케줄 확인&#10;카메라 배터리 충전&#10;언젠가 제주도 여행 가고 싶음&#10;유튜브 채널 만들어볼까?"></textarea>
     <div style="display:flex;gap:12px;margin-top:12px">
       <button class="btn btn-primary" onclick="processDump()">PROCESS →</button>
@@ -438,7 +381,7 @@
     <div class="header-row">
       <div>
         <h3 style="margin-bottom:6px">② 각 항목을 분류하라 — <span id="dumpCount">0</span>개 남음</h3>
-        <p style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px">→ BIG 3: 오늘 반드시 &nbsp;|&nbsp; → 나중에 / 언젠가: Backlog 보관 &nbsp;|&nbsp; ✕: 잡음 제거</p>
+        <p style="font-size:9px;color:var(--text3);letter-spacing:1px">→ BIG 3: 오늘 반드시 &nbsp;|&nbsp; → 나중에 / 언젠가: Backlog 보관 &nbsp;|&nbsp; ✕: 잡음 제거</p>
       </div>
     </div>
     <div id="dumpItems"></div>
@@ -447,7 +390,7 @@
 
 <!-- 02 BIG 3 -->
 <div class="page" id="page-big3">
-  <div class="page-title">BIG<br>THREE</div>
+  <div class="page-title">Big Three</div>
   <div class="page-sub">오늘 반드시 달성할 3가지 — 서브태스크로 쪼개야 실행된다</div>
   <div id="big3Container"></div>
   <div class="card">
@@ -467,7 +410,7 @@
 
 <!-- 03 BACKLOG -->
 <div class="page" id="page-backlog">
-  <div class="page-title">BACK<br>LOG</div>
+  <div class="page-title">Backlog</div>
   <div class="page-sub">Big 3가 아닌 것들 — 잃어버리지 않되, 지금 신경 쓰지 않는다</div>
   <div class="header-row">
     <div class="filter-row" style="margin-bottom:0">
@@ -483,7 +426,7 @@
 
 <!-- 04 TIME BOXING -->
 <div class="page" id="page-timebox">
-  <div class="page-title">TIME<br>BOXING</div>
+  <div class="page-title">Time Boxing</div>
   <div class="page-sub">시간을 소유하라 — 반응하지 말고 설계하라</div>
   <div class="grid2" style="margin-bottom:24px">
     <div>
@@ -500,20 +443,20 @@
       </div>
       <div id="typeGuideDisplay" style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px"></div>
       <h3>머스크 시간 배분 원칙</h3>
-      <div style="font-size:13px;color:var(--muted)">
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span>딥 워크 (핵심 목표)</span><span style="color:var(--accent);font-family:'Space Mono',monospace">60%</span></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span>행정/소통/회의</span><span style="color:var(--accent3);font-family:'Space Mono',monospace">20%</span></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span>버퍼/이동/전환</span><span style="color:var(--accent2);font-family:'Space Mono',monospace">10%</span></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0"><span>개인/재충전</span><span style="color:#cc88ff;font-family:'Space Mono',monospace">10%</span></div>
+      <div style="font-size:13px;color:var(--text3)">
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span>딥 워크 (핵심 목표)</span><span style="color:var(--accent);">60%</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span>행정/소통/회의</span><span style="color:var(--green);">20%</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span>버퍼/이동/전환</span><span style="color:var(--orange);">10%</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0"><span>개인/재충전</span><span style="color:#cc88ff;">10%</span></div>
       </div>
-      <div style="margin-top:24px"><h3>오늘 진행 현황</h3><div id="progressStats" style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted)"></div></div>
+      <div style="margin-top:24px"><h3>오늘 진행 현황</h3><div id="progressStats" style="font-size:11px;color:var(--text3)"></div></div>
     </div>
   </div>
 </div>
 
 <!-- 05 REVIEW -->
 <div class="page" id="page-review">
-  <div class="page-title">DAILY<br>REVIEW</div>
+  <div class="page-title">Daily Review</div>
   <div class="page-sub">반성 없이 성장 없다 — 매일 밤 5분의 의식</div>
   <div class="grid2">
     <div>
@@ -539,12 +482,12 @@
     <div id="ilist-backlog" style="display:none;margin-bottom:14px"></div>
     <div id="ilist-dump" style="display:none;margin-bottom:14px"></div>
     <div id="importDivider" style="border-top:1px solid var(--border);padding-top:16px;margin-bottom:4px">
-      <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted)">또는 직접 입력</span>
+      <span style="font-size:9px;color:var(--text3)">또는 직접 입력</span>
     </div>
     <div class="form-row"><label class="form-label">시간</label>
       <div style="display:flex;gap:8px">
         <select id="blockHour" style="flex:1"></select>
-        <span style="padding:12px;color:var(--muted);font-family:'Space Mono',monospace">:</span>
+        <span style="padding:12px;color:var(--text3);">:</span>
         <select id="blockMin" style="flex:1"><option value="00">00</option><option value="30">30</option></select>
       </div>
     </div>
@@ -589,20 +532,20 @@
 <div class="modal-overlay" id="b3BacklogModal">
   <div class="modal" style="width:420px">
     <h2>BACKLOG으로 이동</h2>
-    <p style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:16px">이 태스크를 Backlog의 어느 카테고리로 보낼까요?</p>
+    <p style="font-size:10px;color:var(--text3);margin-bottom:16px">이 태스크를 Backlog의 어느 카테고리로 보낼까요?</p>
     <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);padding:12px 16px;font-size:14px;margin-bottom:24px" id="b3BacklogText"></div>
     <div style="display:flex;flex-direction:column;gap:10px">
       <button class="btn btn-secondary" style="text-align:left;padding:14px 20px;border-color:#6699aa44;justify-content:flex-start" onclick="confirmBig3ToBacklog('later')">
         <span style="color:#6699aa;font-size:13px;font-weight:700;letter-spacing:1px">나중에</span>
-        <span style="display:block;font-size:10px;color:var(--muted);margin-top:4px;font-weight:400;letter-spacing:0">곧 할 것, 구체적 계획은 없지만</span>
+        <span style="display:block;font-size:10px;color:var(--text3);margin-top:4px;font-weight:400;letter-spacing:0">곧 할 것, 구체적 계획은 없지만</span>
       </button>
       <button class="btn btn-secondary" style="text-align:left;padding:14px 20px;border-color:#aaa86644;justify-content:flex-start" onclick="confirmBig3ToBacklog('someday')">
         <span style="color:#aaa866;font-size:13px;font-weight:700;letter-spacing:1px">언젠가</span>
-        <span style="display:block;font-size:10px;color:var(--muted);margin-top:4px;font-weight:400;letter-spacing:0">막연하지만 하고 싶은 것</span>
+        <span style="display:block;font-size:10px;color:var(--text3);margin-top:4px;font-weight:400;letter-spacing:0">막연하지만 하고 싶은 것</span>
       </button>
       <button class="btn btn-secondary" style="text-align:left;padding:14px 20px;border-color:#bb886644;justify-content:flex-start" onclick="confirmBig3ToBacklog('idea')">
         <span style="color:#bb8866;font-size:13px;font-weight:700;letter-spacing:1px">아이디어</span>
-        <span style="display:block;font-size:10px;color:var(--muted);margin-top:4px;font-weight:400;letter-spacing:0">아직 행동이 아닌 생각</span>
+        <span style="display:block;font-size:10px;color:var(--text3);margin-top:4px;font-weight:400;letter-spacing:0">아직 행동이 아닌 생각</span>
       </button>
     </div>
     <div class="modal-actions" style="margin-top:20px">
@@ -615,7 +558,7 @@
 <div class="modal-overlay" id="typeGuideModal">
   <div class="modal" style="width:580px">
     <h2>유형 가이드 편집</h2>
-    <p style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:20px">각 유형의 이름과 설명을 자유롭게 수정하세요</p>
+    <p style="font-size:10px;color:var(--text3);margin-bottom:20px">각 유형의 이름과 설명을 자유롭게 수정하세요</p>
     <div id="typeGuideEditor"></div>
     <div class="modal-actions">
       <button class="btn btn-primary" onclick="saveTypeGuide()">저장</button>
@@ -626,10 +569,10 @@
 
 <script>
 const DEFAULT_TYPES = [
-  {key:'deep',emoji:'🔴',name:'딥 워크',desc:'핵심 목표 집중',borderColor:'#3a4a00',bg:'#1a1f00',tagClass:'tag-deep'},
-  {key:'admin',emoji:'🔵',name:'행정/소통',desc:'이메일, 회의, 소통',borderColor:'#0a3333',bg:'#0d1a1a',tagClass:'tag-admin'},
-  {key:'personal',emoji:'🟣',name:'개인/재충전',desc:'운동, 식사, 휴식',borderColor:'#330033',bg:'#1a0d1a',tagClass:'tag-personal'},
-  {key:'buffer',emoji:'🟡',name:'버퍼/전환',desc:'이동, 준비, 전환 시간',borderColor:'#332000',bg:'#1a1000',tagClass:'tag-buffer'},
+  {key:'deep',emoji:'🔴',name:'딥 워크',desc:'핵심 목표 집중',borderColor:'rgba(232,255,0,.25)',bg:'rgba(232,255,0,.05)',tagClass:'tag-deep'},
+  {key:'admin',emoji:'🔵',name:'행정/소통',desc:'이메일, 회의, 소통',borderColor:'rgba(61,220,132,.25)',bg:'rgba(61,220,132,.05)',tagClass:'tag-admin'},
+  {key:'personal',emoji:'🟣',name:'개인/재충전',desc:'운동, 식사, 휴식',borderColor:'rgba(182,123,255,.25)',bg:'rgba(182,123,255,.05)',tagClass:'tag-personal'},
+  {key:'buffer',emoji:'🟡',name:'버퍼/전환',desc:'이동, 준비, 전환 시간',borderColor:'rgba(255,140,66,.25)',bg:'rgba(255,140,66,.05)',tagClass:'tag-buffer'},
 ];
 
 // ===== FIREBASE SETUP =====
@@ -661,7 +604,7 @@ const state = {
 let syncTimeout = null;
 function showSync(status) {
   const text = status === 'saving' ? '⟳ 저장 중...' : status === 'ok' ? '✓ 동기화됨' : '✕ 오프라인';
-  const color = status === 'saving' ? 'var(--muted)' : status === 'ok' ? 'var(--accent3)' : 'var(--danger)';
+  const color = status === 'saving' ? 'var(--text3)' : status === 'ok' ? 'var(--green)' : 'var(--red)';
   const el = document.getElementById('syncStatus');
   if(el) { el.textContent = text; el.style.color = color; }
   const badge = document.getElementById('syncBadge');
@@ -1008,17 +951,17 @@ function renderDump() {
   document.getElementById('dumpCount').textContent=show.length;
   const c=document.getElementById('dumpItems');
   if(!show.length){
-    c.innerHTML=`<div style="padding:24px;text-align:center;color:var(--muted);font-family:'Space Mono',monospace;font-size:11px;border:1px dashed var(--border)">✓ 이 날짜에 분류된 항목이 없습니다</div>`;return;
+    c.innerHTML=`<div style="padding:24px;text-align:center;color:var(--text3);font-size:12px;border:1px dashed var(--border)">✓ 이 날짜에 분류된 항목이 없습니다</div>`;return;
   }
   window._dumpMap = {};
   show.forEach((item, idx) => { window._dumpMap[idx] = item.id; });
   c.innerHTML=show.map((item,idx)=>`
     <div class="dump-item">
-      <div style="width:8px;height:8px;border-radius:50%;background:${item.priority==='high'?'var(--accent)':item.priority==='mid'?'var(--accent2)':'var(--muted)'};flex-shrink:0;margin-top:6px"></div>
+      <div style="width:8px;height:8px;border-radius:50%;background:${item.priority==='high'?'var(--accent)':item.priority==='mid'?'var(--orange)':'var(--text3)'};flex-shrink:0;margin-top:6px"></div>
       <div style="flex:1">
         <div class="dump-text">${escHtml(item.text)}</div>
         <div class="dump-actions">
-          <select onchange="setPriority(window._dumpMap[${idx}],this.value)" style="font-size:9px;padding:4px 8px;width:auto;font-family:'Space Mono',monospace;letter-spacing:1px">
+          <select onchange="setPriority(window._dumpMap[${idx}],this.value)" style="font-size:9px;padding:4px 8px;width:auto;letter-spacing:1px">
             <option value="high" ${item.priority==='high'?'selected':''}>● HIGH</option>
             <option value="mid"  ${item.priority==='mid' ?'selected':''}>● MID</option>
             <option value="low"  ${item.priority==='low' ?'selected':''}>● LOW</option>
@@ -1057,7 +1000,7 @@ function renderBig3(){
   const c=document.getElementById('big3Container');
   const isFuture = dateDiffDays(realToday(), activeDate) > 0;
   if(!items.length){
-    c.innerHTML=`<div style="padding:40px;text-align:center;color:var(--muted);font-family:'Space Mono',monospace;font-size:12px;letter-spacing:2px;border:1px dashed var(--border)">${isFuture?'내일의':'이 날의'} Big 3를 미리 설정하세요<br><span style="font-size:10px;display:block;margin-top:8px">Brain Dump에서 분류하거나 직접 입력하세요</span></div>`;
+    c.innerHTML=`<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px;border:1px dashed var(--border)">${isFuture?'내일의':'이 날의'} Big 3를 미리 설정하세요<br><span style="font-size:10px;display:block;margin-top:8px">Brain Dump에서 분류하거나 직접 입력하세요</span></div>`;
     updateStats([]);return;
   }
   c.innerHTML=items.map((item,i)=>{
@@ -1159,15 +1102,15 @@ function renderBacklog(filter){
   const items=filter==='all'?state.backlog:state.backlog.filter(i=>i.category===filter);
   const c=document.getElementById('backlogList');
   if(!items.length){
-    c.innerHTML=`<div style="padding:32px;text-align:center;color:var(--muted);font-family:'Space Mono',monospace;font-size:11px;border:1px dashed var(--border)">항목이 없습니다<br><span style="font-size:9px;display:block;margin-top:6px">Brain Dump에서 분류하거나 + ADD로 추가하세요</span></div>`;return;
+    c.innerHTML=`<div style="padding:32px;text-align:center;color:var(--text3);font-size:12px;border:1px dashed var(--border)">항목이 없습니다<br><span style="font-size:9px;display:block;margin-top:6px">Brain Dump에서 분류하거나 + ADD로 추가하세요</span></div>`;return;
   }
   c.innerHTML=items.map(item=>{
-    const cat=CAT[item.category]||{label:item.category,color:'var(--muted)'};
+    const cat=CAT[item.category]||{label:item.category,color:'var(--text3)'};
     return `<div class="backlog-item">
       <span class="cat-badge" style="color:${cat.color};border-color:${cat.color}66">${cat.label}</span>
       <div style="flex:1">
         <div style="font-size:14px;margin-bottom:${item.note?'4px':'0'}">${escHtml(item.text)}</div>
-        ${item.note?`<div style="font-size:12px;color:var(--muted)">${escHtml(item.note)}</div>`:''}
+        ${item.note?`<div style="font-size:12px;color:var(--text3)">${escHtml(item.note)}</div>`:''}
       </div>
       <button class="btn btn-xs btn-primary" onclick="backlogToBig3('${item.id}')" title="오늘 Big 3로 올리기">→ B3</button>
       <button class="btn btn-xs btn-danger"  onclick="removeBacklog('${item.id}')">✕</button>
@@ -1250,7 +1193,7 @@ function iRow(text,type){
     <span style="font-size:9px;color:var(--accent);border:1px solid var(--accent);padding:2px 6px">+ IMPORT</span>
   </div>`;
 }
-function emptyI(msg){return `<div style="padding:12px;font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);border:1px dashed var(--border);text-align:center">${msg}</div>`;}
+function emptyI(msg){return `<div style="padding:12px;font-size:10px;color:var(--text3);border:1px dashed var(--border);text-align:center">${msg}</div>`;}
 function renderIBig3(){
   const items=state.big3.filter(i=>i.date===activeDate);
   if(!items.length){
@@ -1276,9 +1219,9 @@ function renderIBig3(){
 function iRowSub(text, type, isDone){
   const safe=text.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
   return `<div onclick="importTask('${safe}','${type}')" style="display:flex;align-items:center;gap:10px;padding:7px 14px 7px 30px;border:1px solid var(--border);border-top:none;margin-bottom:0;cursor:pointer;background:var(--bg);opacity:${isDone?'.45':'1'}" onmouseover="this.style.borderColor='var(--accent)';this.style.background='var(--surface2)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--bg)'">
-    <span style="color:var(--muted);font-size:10px;flex-shrink:0">${isDone?'✓':'↳'}</span>
-    <span style="flex:1;font-size:12px;${isDone?'text-decoration:line-through;color:var(--muted)':''}">${escHtml(text)}</span>
-    <span style="font-size:9px;color:var(--accent3);border:1px solid var(--accent3);padding:2px 6px;flex-shrink:0">+ IMPORT</span>
+    <span style="color:var(--text3);font-size:10px;flex-shrink:0">${isDone?'✓':'↳'}</span>
+    <span style="flex:1;font-size:12px;${isDone?'text-decoration:line-through;color:var(--text3)':''}">${escHtml(text)}</span>
+    <span style="font-size:9px;color:var(--green);border:1px solid var(--green);padding:2px 6px;flex-shrink:0">+ IMPORT</span>
   </div>`;
 }
 function renderIBacklog(){
@@ -1313,15 +1256,15 @@ function renderTimeGrid(){
   const grid=document.getElementById('timeGrid');
   const tb=state.blocks.filter(b=>b.date===activeDate).sort((a,b)=>a.time.localeCompare(b.time));
   if(!tb.length){
-    grid.innerHTML=`<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--muted);font-family:'Space Mono',monospace;font-size:11px;border:1px dashed var(--border)">+ 버튼으로 시간 블록을 추가하세요</div>`;
+    grid.innerHTML=`<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text3);font-size:12px;border:1px dashed var(--border)">+ 버튼으로 시간 블록을 추가하세요</div>`;
   } else {
     grid.innerHTML=tb.map(b=>`
       <div class="time-label">${b.time}</div>
       <div class="time-block ${b.type} ${b.done?'done-block':''}" onclick="toggleBlock('${b.id}')">
-        <span>${escHtml(b.task)} <span style="color:var(--muted);font-size:11px">(${b.duration}분)</span></span>
+        <span>${escHtml(b.task)} <span style="color:var(--text3);font-size:11px">(${b.duration}분)</span></span>
         <div style="display:flex;align-items:center;gap:8px">
           <span class="block-tag tag-${b.type}">${b.type.toUpperCase()}</span>
-          <button class="btn btn-sm" style="background:transparent;border:1px solid var(--border);color:var(--muted);font-size:9px;padding:5px 8px" onclick="event.stopPropagation();openEditBlock('${b.id}')" title="편집">✎</button>
+          <button class="btn btn-sm" style="background:transparent;border:1px solid var(--border);color:var(--text3);font-size:9px;padding:5px 8px" onclick="event.stopPropagation();openEditBlock('${b.id}')" title="편집">✎</button>
           <button class="btn btn-sm" style="background:var(--accent);color:#000;font-size:9px;padding:5px 8px" onclick="event.stopPropagation();startFocus('${escHtml(b.task)}',${b.duration})">▶</button>
           <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();removeBlock('${b.id}')" style="padding:5px 8px">✕</button>
         </div>
@@ -1340,7 +1283,7 @@ function renderTypeGuideDisplay(){
   const c=document.getElementById('typeGuideDisplay');if(!c)return;
   c.innerHTML=state.typeGuide.map(t=>`
     <div style="padding:12px 16px;border:1px solid ${t.borderColor};border-left:4px solid ${t.borderColor};background:${t.bg};display:flex;align-items:center;justify-content:space-between">
-      <div><span style="font-size:13px">${t.emoji} ${t.name}</span><span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);margin-left:10px">${t.desc}</span></div>
+      <div><span style="font-size:13px">${t.emoji} ${t.name}</span><span style="font-size:10px;color:var(--text3);margin-left:10px">${t.desc}</span></div>
       <span class="block-tag ${t.tagClass}">${t.key.toUpperCase()}</span>
     </div>`).join('');
 }
@@ -1351,12 +1294,12 @@ function populateBlockTypeSelect(){
 function openTypeGuide(){
   document.getElementById('typeGuideEditor').innerHTML=state.typeGuide.map((t,i)=>`
     <div style="background:var(--surface2);border:1px solid var(--border);border-left:4px solid ${t.borderColor};padding:16px;margin-bottom:12px">
-      <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:12px">${t.key.toUpperCase()} 유형</div>
+      <div style="font-size:9px;color:var(--text3);margin-bottom:12px">${t.key.toUpperCase()} 유형</div>
       <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px">
-        <div><div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:6px">이모지 + 이름</div>
+        <div><div style="font-size:9px;color:var(--text3);margin-bottom:6px">이모지 + 이름</div>
           <div style="display:flex;gap:6px"><input type="text" id="tge-${i}" value="${t.emoji}" style="width:50px;text-align:center;font-size:16px;padding:8px"><input type="text" id="tgn-${i}" value="${t.name}" style="flex:1"></div>
         </div>
-        <div><div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:6px">설명</div><input type="text" id="tgd-${i}" value="${t.desc}"></div>
+        <div><div style="font-size:9px;color:var(--text3);margin-bottom:6px">설명</div><input type="text" id="tgd-${i}" value="${t.desc}"></div>
       </div>
     </div>`).join('');
   document.getElementById('typeGuideModal').classList.add('open');
@@ -1389,8 +1332,8 @@ function saveReview(){
 }
 function renderReviews(){
   const c=document.getElementById('reviewHistory');
-  if(!state.reviews.length){c.innerHTML=`<div style="padding:24px;text-align:center;color:var(--muted);font-family:'Space Mono',monospace;font-size:11px;border:1px dashed var(--border)">아직 리뷰가 없습니다</div>`;return;}
-  c.innerHTML=state.reviews.map(r=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:16px"><span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--accent)">${r.date}</span><span style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted)">${r.ts||''}</span></div>${r.win?`<div style="margin-bottom:10px"><div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--accent3);margin-bottom:4px">WIN</div><div style="font-size:13px">${escHtml(r.win)}</div></div>`:''} ${r.miss?`<div style="margin-bottom:10px"><div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--accent2);margin-bottom:4px">MISS</div><div style="font-size:13px">${escHtml(r.miss)}</div></div>`:''} ${r.improve?`<div><div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:4px">TOMORROW</div><div style="font-size:13px">${escHtml(r.improve)}</div></div>`:''}</div>`).join('');
+  if(!state.reviews.length){c.innerHTML=`<div style="padding:24px;text-align:center;color:var(--text3);font-size:12px;border:1px dashed var(--border)">아직 리뷰가 없습니다</div>`;return;}
+  c.innerHTML=state.reviews.map(r=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:16px"><span style="font-size:10px;color:var(--accent)">${r.date}</span><span style="font-size:9px;color:var(--text3)">${r.ts||''}</span></div>${r.win?`<div style="margin-bottom:10px"><div style="font-size:9px;color:var(--green);margin-bottom:4px">WIN</div><div style="font-size:13px">${escHtml(r.win)}</div></div>`:''} ${r.miss?`<div style="margin-bottom:10px"><div style="font-size:9px;color:var(--orange);margin-bottom:4px">MISS</div><div style="font-size:13px">${escHtml(r.miss)}</div></div>`:''} ${r.improve?`<div><div style="font-size:9px;color:var(--text3);margin-bottom:4px">TOMORROW</div><div style="font-size:13px">${escHtml(r.improve)}</div></div>`:''}</div>`).join('');
 }
 
 // UTILS
