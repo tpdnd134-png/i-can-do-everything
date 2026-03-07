@@ -2095,12 +2095,19 @@ function renderProjects(){
               <span class="proj-task-toggle" id="tasktoggle-${p.id}">▶</span>
             </div>
             <div id="tasklist-${p.id}" style="display:none">
-              ${tasks.map(t=>`
-                <div class="proj-task-item">
+              ${tasks.map(t=>{
+                const inBig3=state.big3.some(b=>b.linkedTaskId===t.id&&b.date===activeDate&&!(b.done||(b.subtasks||[]).every(s=>s.done)));
+                return `<div class="proj-task-item">
                   <div class="proj-task-check ${t.done?'done':''}" onclick="event.stopPropagation();toggleProjectTask('${p.id}','${t.id}')"></div>
                   <span class="proj-task-text ${t.done?'done':''}">${escHtml(t.text)}</span>
-                  ${t.linkedCount?`<span class="proj-task-linked">Big3 연동</span>`:''}
-                </div>`).join('')}
+                  ${t.done
+                    ? ''
+                    : inBig3
+                      ? `<span class="proj-task-linked" style="background:rgba(232,255,0,.12);color:var(--accent)">오늘 Big3 ✓</span>`
+                      : `<button class="btn btn-xs" style="flex-shrink:0;background:var(--surface3);border:1px solid var(--border);color:var(--text2);font-size:10px;padding:3px 8px" onclick="event.stopPropagation();taskToBig3('${p.id}','${t.id}')">→ Big 3</button>`
+                  }
+                </div>`;
+              }).join('')}
             </div>
           </div>`;
         })()}
@@ -2746,6 +2753,36 @@ function onBlockTaskSelect() {
   document.getElementById('blockTask').value = t.text;
 }
 
+
+
+function taskToBig3(projId, taskId) {
+  const todayItems = state.big3.filter(i => i.date === activeDate);
+  if (todayItems.length >= 3) {
+    // 토스트로 안내 (alert 대신)
+    const toast = document.createElement('div');
+    toast.textContent = '오늘 Big 3가 꽉 찼습니다 (최대 3개)';
+    toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--red);color:#fff;font-size:12px;font-weight:700;padding:10px 20px;border-radius:20px;z-index:9999;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.4)';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2500);
+    return;
+  }
+  const p = state.projects.find(x => x.id === projId); if (!p) return;
+  const t = (p.tasks || []).find(x => x.id === taskId); if (!t) return;
+  state.big3.push({
+    id: uid(), text: t.text, done: false,
+    date: activeDate, subtasks: [],
+    projectId: projId, linkedTaskId: taskId,
+    intentWhen: '', intentWhere: ''
+  });
+  save();
+  renderProjects(); // refresh 오늘 Big3 ✓ 배지
+  // 토스트
+  const toast = document.createElement('div');
+  toast.textContent = `✓ Big 3에 추가됨: "${t.text}"`;
+  toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;font-size:12px;font-weight:700;padding:10px 20px;border-radius:20px;z-index:9999;white-space:nowrap;box-shadow:0 4px 20px rgba(232,255,0,.3)';
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2200);
+}
 
 function toggleProjTaskList(projId) {
   const list = document.getElementById('tasklist-' + projId);
