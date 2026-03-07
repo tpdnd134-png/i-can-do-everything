@@ -497,6 +497,14 @@
   .proj-task-select{font-size:12px;padding:6px 12px;color:var(--text3);width:100%;margin-top:6px;display:none;}
   .proj-task-select.visible{display:block;}
 
+
+  .task-editor-row{cursor:default;}
+  .drag-handle{cursor:grab;color:var(--text3);font-size:14px;padding:0 4px;user-select:none;flex-shrink:0;transition:color .15s;}
+  .drag-handle:hover{color:var(--text2);}
+  .drag-handle:active{cursor:grabbing;}
+  .task-editor-row.dragging{opacity:.4;border:1px dashed var(--accent);border-radius:6px;}
+  .task-editor-row.drag-over{border-top:2px solid var(--accent);}
+
 </style>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -2670,11 +2678,39 @@ function addProjTaskRow(text='') {
   const ed = document.getElementById('projTaskEditor'); if (!ed) return;
   const row = document.createElement('div');
   row.className = 'task-editor-row';
+  row.draggable = true;
   row.innerHTML = `
+    <span class="drag-handle" title="드래그로 순서 변경">⠿</span>
     <input type="text" placeholder="태스크 입력 (Enter로 추가)" value="${escHtml(text)}"
       onkeydown="if(event.key==='Enter'){event.preventDefault();addProjTaskRow();const rows=document.querySelectorAll('#projTaskEditor .task-editor-row input');rows[rows.length-1].focus();}">
     <button class="btn btn-xs btn-danger" onclick="this.parentElement.remove()" type="button">✕</button>
   `;
+  // drag events
+  row.addEventListener('dragstart', e => {
+    e.dataTransfer.effectAllowed = 'move';
+    row.classList.add('dragging');
+    ed._dragging = row;
+  });
+  row.addEventListener('dragend', () => {
+    row.classList.remove('dragging');
+    ed.querySelectorAll('.task-editor-row').forEach(r => r.classList.remove('drag-over'));
+    ed._dragging = null;
+  });
+  row.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (ed._dragging && ed._dragging !== row) {
+      ed.querySelectorAll('.task-editor-row').forEach(r => r.classList.remove('drag-over'));
+      row.classList.add('drag-over');
+    }
+  });
+  row.addEventListener('drop', e => {
+    e.preventDefault();
+    if (ed._dragging && ed._dragging !== row) {
+      // insert dragging before this row
+      ed.insertBefore(ed._dragging, row);
+      ed.querySelectorAll('.task-editor-row').forEach(r => r.classList.remove('drag-over'));
+    }
+  });
   ed.appendChild(row);
   row.querySelector('input').focus();
 }
