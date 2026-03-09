@@ -120,14 +120,31 @@
   .cat-badge{font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;flex-shrink:0;margin-top:1px;letter-spacing:-.1px;}
 
   /* TIME BOXING */
-  .time-grid{display:grid;grid-template-columns:64px 1fr;gap:4px;max-height:600px;overflow-y:auto;}
-  .time-label{font-size:11px;font-weight:500;color:var(--text3);padding:6px 8px;text-align:right;display:flex;align-items:center;justify-content:flex-end;}
-  .time-block{min-height:48px;border:1px solid var(--border);border-radius:var(--radius-xs);padding:8px 14px;font-size:13px;cursor:pointer;transition:all .12s;display:flex;align-items:center;justify-content:space-between;background:var(--surface);}
-  .time-block:hover{background:var(--surface2);}
-  .time-block.deep{background:rgba(232,255,0,.06);border-color:rgba(232,255,0,.2);}
-  .time-block.admin{background:var(--green-dim);border-color:rgba(61,220,132,.2);}
-  .time-block.personal{background:rgba(182,123,255,.08);border-color:rgba(182,123,255,.2);}
-  .time-block.buffer{background:rgba(255,140,66,.06);border-color:rgba(255,140,66,.2);}
+  /* ── 24H TIMELINE ── */
+  .timeline-wrap{position:relative;display:flex;gap:0;overflow-y:auto;max-height:680px;border:1px solid var(--border);border-radius:var(--radius);}
+  .timeline-hours{width:48px;flex-shrink:0;position:sticky;left:0;background:var(--surface);border-right:1px solid var(--border);z-index:2;}
+  .timeline-hour-label{height:60px;display:flex;align-items:flex-start;justify-content:flex-end;padding:4px 8px 0 0;font-size:10px;font-weight:600;color:var(--text3);box-sizing:border-box;}
+  .timeline-hour-label.now-hour{color:var(--accent);}
+  .timeline-canvas{flex:1;position:relative;min-height:1440px;} /* 24h x 60px */
+  .timeline-hour-line{position:absolute;left:0;right:0;height:1px;background:var(--border);opacity:.5;}
+  .timeline-hour-line.major{opacity:1;background:var(--surface3);}
+  .timeline-now-line{position:absolute;left:0;right:0;height:2px;background:var(--red);z-index:10;border-radius:2px;}
+  .timeline-now-dot{position:absolute;left:-5px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--red);}
+  .timeline-block{position:absolute;left:4px;right:4px;border-radius:6px;padding:6px 10px;cursor:pointer;border-left:3px solid;overflow:hidden;transition:opacity .15s;box-sizing:border-box;}
+  .timeline-block:hover{filter:brightness(1.15);}
+  .timeline-block.done-block{opacity:.35;}
+  .timeline-block.type-deep{background:rgba(232,255,0,.1);border-color:var(--accent);}
+  .timeline-block.type-admin{background:rgba(61,220,132,.1);border-color:var(--green);}
+  .timeline-block.type-personal{background:rgba(182,123,255,.12);border-color:var(--purple);}
+  .timeline-block.type-buffer{background:rgba(255,140,66,.08);border-color:var(--orange);}
+  .timeline-block-title{font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .timeline-block-meta{font-size:10px;color:var(--text3);margin-top:2px;}
+  .timeline-block-actions{position:absolute;right:4px;top:50%;transform:translateY(-50%);display:none;gap:4px;align-items:center;}
+  .timeline-block:hover .timeline-block-actions{display:flex;}
+  .tl-btn{font-size:9px;padding:3px 6px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer;white-space:nowrap;}
+  .tl-btn:hover{background:var(--surface2);}
+  .tl-btn.danger{border-color:var(--red);color:var(--red);}
+  /* old compat */
   .time-block.done-block{opacity:.35;text-decoration:line-through;}
   .block-tag{font-size:10px;font-weight:600;letter-spacing:-.1px;padding:2px 8px;border-radius:4px;}
   .tag-deep{background:var(--accent-dim);color:var(--accent);}
@@ -280,10 +297,9 @@
     .backlog-item { padding: 12px 14px; flex-wrap: wrap; gap: 8px; }
     .filter-btn { font-size: 11px; padding: 5px 12px; }
 
-    .time-grid { grid-template-columns: 46px 1fr; max-height: none; }
-    .time-label { font-size: 10px; padding: 6px 4px; }
-    .time-block { padding: 8px 10px; font-size: 12px; flex-wrap: wrap; gap: 4px; min-height: 52px; }
-    .time-block > span { width: 100%; }
+    .timeline-wrap { max-height: none; border: none; }
+    .timeline-block-title { font-size: 11px; }
+    .timeline-hour-label { font-size: 9px; }
 
     .modal { padding: 24px 20px; width: 100%; max-width: 100vw; max-height: 85vh; border-radius: 20px 20px 0 0; position: fixed; bottom: 0; left: 0; right: 0; top: auto; border-bottom: none; }
     .modal-overlay { align-items: flex-end; }
@@ -504,6 +520,24 @@
   .drag-handle:active{cursor:grabbing;}
   .task-editor-row.dragging{opacity:.4;border:1px dashed var(--accent);border-radius:6px;}
   .task-editor-row.drag-over{border-top:2px solid var(--accent);}
+
+
+  /* ── EXECUTION LOG ── */
+  .exec-compare-row{display:grid;grid-template-columns:1fr 20px 1fr;gap:8px;align-items:start;padding:10px 0;border-bottom:1px solid var(--border);}
+  .exec-compare-row:last-child{border-bottom:none;}
+  .exec-plan{background:var(--surface2);border-radius:8px;padding:8px 12px;font-size:12px;}
+  .exec-actual{background:var(--surface2);border-radius:8px;padding:8px 12px;font-size:12px;position:relative;}
+  .exec-actual.matched{border:1px solid rgba(61,220,132,.3);}
+  .exec-actual.missed{border:1px solid rgba(255,90,90,.3);opacity:.6;}
+  .exec-arrow{color:var(--text3);font-size:12px;text-align:center;padding-top:10px;}
+  .exec-gap-badge{font-size:10px;padding:1px 6px;border-radius:8px;display:inline-block;margin-top:4px;}
+  .exec-gap-badge.on-time{background:rgba(61,220,132,.15);color:var(--green);}
+  .exec-gap-badge.over{background:rgba(255,90,90,.15);color:var(--red);}
+  .exec-gap-badge.under{background:rgba(76,158,255,.15);color:var(--blue);}
+  .exec-log-input{display:flex;gap:8px;margin-top:8px;}
+  .exec-log-input input{flex:1;font-size:12px;padding:7px 12px;}
+  .feedback-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
+  .feedback-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;display:inline-block;margin-bottom:8px;}
 
 </style>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -736,30 +770,38 @@
 
 <!-- 04 TIME BOXING -->
 <div class="page" id="page-timebox">
-  <div class="page-title">Time Boxing</div>
-  <div class="page-sub">시간을 소유하라 — 반응하지 말고 설계하라</div>
-  <div class="grid2" style="margin-bottom:24px">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
     <div>
-      <div class="header-row">
-        <h3>오늘의 시간표</h3>
-        <button class="btn btn-sm btn-primary" onclick="openAddBlock()">+ BLOCK</button>
-      </div>
-      <div class="time-grid" id="timeGrid"></div>
+      <div class="page-title">Time Boxing</div>
+      <div class="page-sub">시간을 소유하라 — 반응하지 말고 설계하라</div>
     </div>
-    <div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <h3 style="margin-bottom:0">블록 유형 가이드</h3>
-        <button class="btn btn-sm btn-secondary" onclick="openTypeGuide()" style="font-size:9px;padding:6px 12px">✎ 편집</button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-sm btn-secondary" onclick="openTypeGuide()" style="font-size:10px">✎ 유형</button>
+      <button class="btn btn-sm btn-primary" onclick="openAddBlock()">+ BLOCK</button>
+    </div>
+  </div>
+
+  <!-- 오늘 배분 현황 바 -->
+  <div style="margin-bottom:20px">
+    <div style="display:flex;gap:4px;height:8px;border-radius:6px;overflow:hidden;margin-bottom:8px" id="timeDistBar"></div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap" id="timeDistLegend"></div>
+  </div>
+
+  <div style="display:flex;gap:20px;align-items:flex-start">
+    <!-- 24H 타임라인 -->
+    <div style="flex:1;min-width:0">
+      <div class="timeline-wrap" id="timelineWrap">
+        <div class="timeline-hours" id="timelineHours"></div>
+        <div class="timeline-canvas" id="timelineCanvas"></div>
       </div>
-      <div id="typeGuideDisplay" style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px"></div>
-      <h3>머스크 시간 배분 원칙</h3>
-      <div style="font-size:13px;color:var(--text3)">
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span>딥 워크 (핵심 목표)</span><span style="color:var(--accent);">60%</span></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span>행정/소통/회의</span><span style="color:var(--green);">20%</span></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span>버퍼/이동/전환</span><span style="color:var(--orange);">10%</span></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0"><span>개인/재충전</span><span style="color:#cc88ff;">10%</span></div>
+    </div>
+    <!-- 사이드 패널 -->
+    <div style="width:200px;flex-shrink:0;display:flex;flex-direction:column;gap:16px">
+      <div id="typeGuideDisplay" style="display:flex;flex-direction:column;gap:6px"></div>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">진행 현황</div>
+        <div id="progressStats" style="font-size:11px;color:var(--text3)"></div>
       </div>
-      <div style="margin-top:24px"><h3>오늘 진행 현황</h3><div id="progressStats" style="font-size:11px;color:var(--text3)"></div></div>
     </div>
   </div>
 </div>
@@ -779,6 +821,16 @@
       <span style="font-size:11px;font-weight:400;color:var(--text3)">— 오늘로 가져오거나 삭제하세요</span>
     </div>
     <div id="reviewDebtList"></div>
+  </div>
+
+  <!-- 타임박싱 vs 실행 비교 -->
+  <div class="card" style="margin-bottom:20px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3 style="margin-bottom:0">📊 계획 vs 실행</h3>
+      <span style="font-size:11px;color:var(--text3)">오늘 타임박싱과 실제 실행 비교</span>
+    </div>
+    <div id="execCompareSection"></div>
+    <div id="execFeedback" style="margin-top:16px"></div>
   </div>
 
   <!-- 프로젝트 진행률 -->
@@ -1210,7 +1262,11 @@ db.ref(DB_KEY).on('value', snapshot => {
 let activeDate = realToday(); // yyyy-mm-dd string
 
 function realToday() {
-  return new Date().toISOString().split('T')[0];
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
 }
 function today() {
   return activeDate; // all render functions use this
@@ -1830,28 +1886,102 @@ function saveBlock(){
   document.getElementById('importDivider').style.display='block';
   save();closeModal('blockModal');renderTimeGrid();
 }
-function renderTimeGrid(){
-  const grid=document.getElementById('timeGrid');
-  const tb=state.blocks.filter(b=>b.date===activeDate).sort((a,b)=>a.time.localeCompare(b.time));
-  if(!tb.length){
-    grid.innerHTML=`<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text3);font-size:12px;border:1px dashed var(--border)">+ 버튼으로 시간 블록을 추가하세요</div>`;
-  } else {
-    grid.innerHTML=tb.map(b=>`
-      <div class="time-label">${b.time}</div>
-      <div class="time-block ${b.type} ${b.done?'done-block':''}" onclick="toggleBlock('${b.id}')">
-        <span>${escHtml(b.task)} <span style="color:var(--text3);font-size:11px">(${b.duration}분)</span></span>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="block-tag tag-${b.type}">${b.type.toUpperCase()}</span>
-          <button class="btn btn-sm" style="background:transparent;border:1px solid var(--border);color:var(--text3);font-size:9px;padding:5px 8px" onclick="event.stopPropagation();openEditBlock('${b.id}')" title="편집">✎</button>
-          <button class="btn btn-sm" style="background:var(--accent);color:#000;font-size:9px;padding:5px 8px" onclick="event.stopPropagation();startFocus('${escHtml(b.task)}',${b.duration})">▶</button>
-          <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();removeBlock('${b.id}')" style="padding:5px 8px">✕</button>
-        </div>
-      </div>`).join('');
+function renderTimeGrid(){ renderTimeline(); }
+
+function renderTimeline(){
+  const canvas = document.getElementById('timelineCanvas');
+  const hoursCol = document.getElementById('timelineHours');
+  if(!canvas || !hoursCol) return;
+
+  const PX_PER_MIN = 1.2; // 60min = 72px
+  const TOTAL_H = 24;
+  canvas.style.minHeight = (TOTAL_H * 60 * PX_PER_MIN) + 'px';
+
+  // ── hour labels + lines ──
+  let labelsHtml = '', linesHtml = '';
+  for(let h = 0; h < TOTAL_H; h++){
+    const top = h * 60 * PX_PER_MIN;
+    labelsHtml += `<div class="timeline-hour-label${h===0||h%6===0?' major':''}" style="height:${60*PX_PER_MIN}px">${String(h).padStart(2,'0')}:00</div>`;
+    linesHtml += `<div class="timeline-hour-line${h%6===0?' major':''}" style="top:${top}px"></div>`;
+    // 30min minor line
+    linesHtml += `<div class="timeline-hour-line" style="top:${top+30*PX_PER_MIN}px;opacity:.2"></div>`;
   }
-  const tc={};state.typeGuide.forEach(t=>tc[t.key]=0);
-  tb.forEach(b=>tc[b.type]=(tc[b.type]||0)+b.duration);
-  const tot=Object.values(tc).reduce((a,b)=>a+b,0)||1;
-  document.getElementById('progressStats').innerHTML=Object.entries(tc).map(([t,m])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="text-transform:uppercase">${t}</span><span>${m}분 (${Math.round(m/tot*100)}%)</span></div>`).join('');
+  hoursCol.innerHTML = labelsHtml;
+
+  // ── now line ──
+  const now = new Date();
+  const nowMin = now.getHours()*60 + now.getMinutes();
+  const nowTop = nowMin * PX_PER_MIN;
+  const isToday = activeDate === realToday();
+  const nowLineHtml = isToday
+    ? `<div class="timeline-now-line" style="top:${nowTop}px"><div class="timeline-now-dot"></div></div>`
+    : '';
+
+  // ── blocks ──
+  const tb = state.blocks.filter(b => b.date === activeDate);
+
+  // type color map from typeGuide
+  const typeColors = {};
+  state.typeGuide.forEach(t => { typeColors[t.key] = t.borderColor; });
+
+  const blocksHtml = tb.map(b => {
+    const [hh, mm] = b.time.split(':').map(Number);
+    const startMin = hh*60 + mm;
+    const dur = parseInt(b.duration)||60;
+    const top = startMin * PX_PER_MIN;
+    const height = Math.max(dur * PX_PER_MIN, 28);
+    const color = typeColors[b.type] || 'var(--accent)';
+    const small = height < 40;
+    return `<div class="timeline-block type-${b.type} ${b.done?'done-block':''}"
+      style="top:${top}px;height:${height}px;border-color:${color}"
+      onclick="toggleBlock('${b.id}')">
+      <div class="timeline-block-title">${escHtml(b.task)}</div>
+      ${small?'': `<div class="timeline-block-meta">${b.time} · ${dur}분</div>`}
+      <div class="timeline-block-actions" onclick="event.stopPropagation()">
+        <button class="tl-btn" onclick="openEditBlock('${b.id}')">✎</button>
+        <button class="tl-btn" onclick="startFocus('${escHtml(b.task)}',${dur})">▶</button>
+        <button class="tl-btn danger" onclick="removeBlock('${b.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  canvas.innerHTML = linesHtml + nowLineHtml + blocksHtml;
+
+  // scroll to current hour (or 7am if not today)
+  const scrollTo = isToday ? Math.max(0, nowTop - 120) : 7*60*PX_PER_MIN;
+  const wrap = document.getElementById('timelineWrap');
+  if(wrap) setTimeout(()=>{ wrap.scrollTop = scrollTo; }, 50);
+
+  // ── dist bar + legend ──
+  const tc={};
+  state.typeGuide.forEach(t=>{ tc[t.key]={min:0,color:t.borderColor,name:t.name,emoji:t.emoji}; });
+  tb.forEach(b=>{ if(tc[b.type]) tc[b.type].min += parseInt(b.duration)||0; });
+  const tot = Object.values(tc).reduce((s,v)=>s+v.min,0)||1;
+  const bar = document.getElementById('timeDistBar');
+  const leg = document.getElementById('timeDistLegend');
+  if(bar) bar.innerHTML = Object.values(tc).filter(v=>v.min>0).map(v=>`<div style="flex:${v.min};background:${v.color};opacity:.8"></div>`).join('');
+  if(leg) leg.innerHTML = Object.values(tc).filter(v=>v.min>0).map(v=>`<span style="font-size:11px;color:var(--text2)">${v.emoji} ${v.name} <b style="color:${v.color}">${v.min}분</b></span>`).join('');
+
+  // ── progress stats ──
+  const ps = document.getElementById('progressStats');
+  if(ps){
+    const done = tb.filter(b=>b.done).length;
+    ps.innerHTML = `
+      <div style="font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px">${done}/${tb.length}</div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:12px">블록 완료</div>
+      ${Object.values(tc).filter(v=>v.min>0).map(v=>{
+        const pct = Math.round(v.min/tot*100);
+        return `<div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+            <span>${v.emoji} ${v.name}</span><span style="color:${v.color}">${pct}%</span>
+          </div>
+          <div style="height:3px;background:var(--surface3);border-radius:2px">
+            <div style="height:100%;width:${pct}%;background:${v.color};border-radius:2px"></div>
+          </div>
+        </div>`;
+      }).join('')}
+    `;
+  }
 }
 function toggleBlock(id){
   const b=state.blocks.find(x=>x.id===id);if(!b)return;
@@ -1917,7 +2047,91 @@ function saveReview(){
   ['reviewWin','reviewMiss','reviewImprove'].forEach(id=>document.getElementById(id).value='');
   save();renderReviews();alert('리뷰 저장 완료!');
 }
+
+function renderExecCompare() {
+  const sec = document.getElementById('execCompareSection');
+  const fb = document.getElementById('execFeedback');
+  if (!sec) return;
+
+  const planned = state.blocks.filter(b => b.date === activeDate);
+  const log = (state.execLog || []).filter(e => e.date === activeDate);
+
+  if (!planned.length) {
+    sec.innerHTML = `<div style="font-size:12px;color:var(--text3);text-align:center;padding:20px 0">오늘 타임박싱 블록이 없습니다</div>`;
+    if(fb) fb.innerHTML = '';
+    return;
+  }
+
+  // compare rows
+  sec.innerHTML = planned.sort((a,b)=>a.time.localeCompare(b.time)).map(b => {
+    const actual = log.find(e => e.blockId === b.id);
+    const durDiff = actual ? (actual.actualMin - parseInt(b.duration)) : null;
+    let gapBadge = '';
+    if(durDiff !== null) {
+      if(Math.abs(durDiff) <= 10) gapBadge = `<span class="exec-gap-badge on-time">계획대로 ✓</span>`;
+      else if(durDiff > 0) gapBadge = `<span class="exec-gap-badge over">+${durDiff}분 초과</span>`;
+      else gapBadge = `<span class="exec-gap-badge under">${durDiff}분 단축</span>`;
+    }
+    return `<div class="exec-compare-row">
+      <div class="exec-plan">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:3px">${b.time} · ${b.duration}분 계획</div>
+        <div style="font-weight:600">${escHtml(b.task)}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">[${b.type.toUpperCase()}]</div>
+      </div>
+      <div class="exec-arrow">→</div>
+      <div class="exec-actual ${actual ? (Math.abs(actual.actualMin - parseInt(b.duration)) <= 10 ? 'matched' : '') : 'missed'}">
+        ${actual
+          ? `<div style="font-size:10px;color:var(--text3);margin-bottom:3px">${actual.actualMin}분 실행</div>
+             <div style="font-weight:600">${escHtml(actual.note||b.task)}</div>
+             ${gapBadge}`
+          : `<div style="font-size:11px;color:var(--text3);margin-bottom:6px">실행 기록 없음</div>
+             <div class="exec-log-input">
+               <input type="number" min="0" max="480" placeholder="실제 분" id="emin-${b.id}" style="width:70px;flex:none">
+               <input type="text" placeholder="메모 (선택)" id="enote-${b.id}">
+               <button class="btn btn-xs btn-primary" onclick="logExec('${b.id}','${activeDate}')">기록</button>
+             </div>`
+        }
+      </div>
+    </div>`;
+  }).join('');
+
+  // AI-style feedback
+  if(fb) {
+    const doneBlocks = planned.filter(b => b.done).length;
+    const total = planned.length;
+    const logged = log.length;
+    const overBlocks = log.filter(e => {
+      const p = planned.find(b => b.id === e.blockId);
+      return p && (e.actualMin - parseInt(p.duration)) > 15;
+    });
+    const pct = total ? Math.round(doneBlocks/total*100) : 0;
+
+    let feedbackHtml = '';
+    if(pct >= 80) feedbackHtml += `<div class="feedback-card"><span class="feedback-tag" style="background:rgba(61,220,132,.15);color:var(--green)">✅ 높은 실행률</span><p style="font-size:13px;margin:0">오늘 계획한 블록의 ${pct}%를 완료했습니다. 탁월한 실행입니다.</p></div>`;
+    else if(pct >= 50) feedbackHtml += `<div class="feedback-card"><span class="feedback-tag" style="background:rgba(255,140,66,.15);color:var(--orange)">⚡ 중간 실행률</span><p style="font-size:13px;margin:0">완료율 ${pct}%. 미완료 블록을 내일 우선순위로 올리세요.</p></div>`;
+    else if(total > 0) feedbackHtml += `<div class="feedback-card"><span class="feedback-tag" style="background:rgba(255,90,90,.15);color:var(--red)">⚠ 낮은 실행률</span><p style="font-size:13px;margin:0">완료율 ${pct}%. 블록 수를 줄이거나 시간 배분을 재검토하세요.</p></div>`;
+
+    if(overBlocks.length > 0) feedbackHtml += `<div class="feedback-card"><span class="feedback-tag" style="background:rgba(76,158,255,.15);color:var(--blue)">⏱ 시간 초과 블록</span><p style="font-size:13px;margin:0">${overBlocks.length}개 블록이 계획보다 15분 이상 초과됐습니다. 해당 작업의 예상 시간을 늘려보세요.</p></div>`;
+
+    fb.innerHTML = feedbackHtml || `<div style="font-size:12px;color:var(--text3)">블록을 완료하면 피드백이 생성됩니다.</div>`;
+  }
+}
+
+function logExec(blockId, date) {
+  const minEl = document.getElementById('emin-' + blockId);
+  const noteEl = document.getElementById('enote-' + blockId);
+  const actualMin = parseInt(minEl?.value);
+  if (!actualMin || actualMin <= 0) return;
+  if (!state.execLog) state.execLog = [];
+  // remove existing for same block/date
+  state.execLog = state.execLog.filter(e => !(e.blockId === blockId && e.date === date));
+  state.execLog.push({ id: uid(), blockId, date, actualMin, note: noteEl?.value.trim() || '', ts: new Date().toLocaleTimeString('ko-KR') });
+  save();
+  renderExecCompare();
+}
+
 function renderReviews(){
+  renderExecCompare();
   // Summary stats
   const todayBig3=state.big3.filter(i=>i.date===activeDate);
   const doneBig3=todayBig3.filter(i=>{const s=i.subtasks||[];return i.done||(s.length>0&&s.every(x=>x.done));});
