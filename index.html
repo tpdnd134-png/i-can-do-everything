@@ -1189,8 +1189,8 @@
   .proj-task-linked{font-size:10px;color:var(--accent);background:rgba(232,255,0,.1);padding:1px 6px;border-radius:8px;flex-shrink:0;}
 
   /* task editor in modal */
-  .task-editor-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
-  .task-editor-row input{flex:1;font-size:13px;padding:7px 12px;}
+  .task-editor-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xs);padding:2px 8px 2px 4px;transition:margin-top .2s cubic-bezier(.4,0,.2,1),border-color .15s,opacity .2s;}
+  .task-editor-row input{flex:1;font-size:13px;padding:6px 10px;background:transparent!important;border:none!important;}
 
   /* Big3 task select */
   .proj-task-select{font-size:12px;padding:6px 12px;color:var(--text3);width:100%;margin-top:6px;display:none;}
@@ -1201,8 +1201,8 @@
   .drag-handle{cursor:grab;color:var(--text3);font-size:14px;padding:0 4px;user-select:none;flex-shrink:0;transition:color .15s;}
   .drag-handle:hover{color:var(--text2);}
   .drag-handle:active{cursor:grabbing;}
-  .task-editor-row.dragging{opacity:.4;border:1px dashed var(--accent);border-radius:6px;}
-  .task-editor-row.drag-over{border-top:2px solid var(--accent);}
+  .task-editor-row.dragging{opacity:.3;border:1px dashed var(--accent);background:rgba(232,255,0,.05);}
+  .task-editor-row.drag-over{border-top:2px solid var(--accent);margin-top:12px;}
 
   /* ═══════════════════════════════════════
      ENHANCED v12 — DASHBOARD
@@ -4698,8 +4698,8 @@ function addProjTaskRow(text='') {
   // drag events
   row.addEventListener('dragstart', e => {
     e.dataTransfer.effectAllowed = 'move';
-    row.classList.add('dragging');
     ed._dragging = row;
+    setTimeout(() => row.classList.add('dragging'), 0);
   });
   row.addEventListener('dragend', () => {
     row.classList.remove('dragging');
