@@ -1651,6 +1651,14 @@
     <button class="today-view-chip" data-view="done" onclick="switchTodayView('done')">Done</button>
   </div>
 
+  <div class="today-section" id="todayOverdueSection" style="display:none">
+    <div class="today-section-head">
+      <span class="today-section-title" style="color:var(--red)">⚠️ Overdue</span>
+      <span class="today-section-count" id="todayOverdueCount"></span>
+    </div>
+    <div id="todayOverdueList"></div>
+  </div>
+
   <div class="today-section">
     <div class="today-section-head">
       <span class="today-section-title">⭐ Big 3 — 오늘 반드시</span>
@@ -6204,6 +6212,22 @@ renderToday = function() {
   const doneList = document.getElementById('todayDoneList');
 
   if(todayView === 'today') {
+    // Overdue section
+    const overdueItems = state.todos.filter(t => !t.done && t.date && t.date < todayStr)
+      .sort((a,b) => a.date.localeCompare(b.date));
+    const overdueSec = document.getElementById('todayOverdueSection');
+    const overdueList = document.getElementById('todayOverdueList');
+    const overdueCount = document.getElementById('todayOverdueCount');
+    if(overdueSec) {
+      if(overdueItems.length) {
+        overdueSec.style.display = 'block';
+        overdueList.innerHTML = overdueItems.map(renderTodoRow).join('');
+        overdueCount.textContent = `${overdueItems.length}개`;
+      } else {
+        overdueSec.style.display = 'none';
+      }
+    }
+
     const open = base.filter(t=>!t.done);
     const done = base.filter(t=>t.done);
     const big3 = open.filter(t=>t.big3);
@@ -6222,7 +6246,9 @@ renderToday = function() {
       document.getElementById('todayDoneCount').textContent = done.length;
     } else doneSec.style.display='none';
   } else {
-    // single flat list view
+    // single flat list view — hide overdue section
+    const overdueSec2 = document.getElementById('todayOverdueSection');
+    if(overdueSec2) overdueSec2.style.display = 'none';
     big3List.parentElement.style.display='block';
     big3List.innerHTML = base.length ? base.map(renderTodoRow).join('') : `<div class="today-empty">${emptyMsgForView(todayView)}</div>`;
     document.getElementById('todayBig3Count').textContent = base.length ? `${base.length}개` : '';
